@@ -1,0 +1,27 @@
+root = true # Корневой конфиг (.editorconfig)
+
+# Настройки для всех файлов
+[*]
+charset = utf-8          # Кодировка
+indent_style = space     # Тип отступа
+trim_trailing_whitespace = true  # Удаление пробела в конце строки
+insert_final_newline = true      # Добавление пустой строки в конце файла
+end_of_line = lf         # Тип переноса строки Line Feed (\n)
+
+# Настройки для Windows-специфичных файлов
+[*.bat]
+end_of_line = crlf       # Тип переноса строки Carriage Return + Line Feed (\r\n)
+
+# Настройки для Python-файлов
+[*.py]
+indent_size = 4          # Размер отступа 4 по PEP 8
+max_line_length = 120    # Максимальная длина строки 120 по PEP 8
+
+# Настройки для YAML, JSON, TOML
+[*.{yml,yaml,json,toml}]
+indent_size = 2          # Размер отступа
+
+# Настройки для Markdown-файлов
+[*.md]
+trim_trailing_whitespace = false # Удаление пробела в конце строки
+max_line_length = 100    # Максимальная длина строки
