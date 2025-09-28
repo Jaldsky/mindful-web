@@ -1,4 +1,4 @@
-from app.common import StringEnum
+from app.common.common import StringEnum
 
 
 class HealthStatus(StringEnum):
