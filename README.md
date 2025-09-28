@@ -42,3 +42,20 @@ Mindful-Web — это open-source инструмент для тех, кто х
 ```bash
 git clone https://github.com/Jaldsky/mindful-web.git
 cd mindful-web
+```
+
+### 2. Set up environment variables
+
+### 3. Build the base image
+```bash
+docker build -t mindfulweb-base:latest -f deploy/docker/base.Dockerfile .
+```
+
+### 4. Build and start all services
+```bash
+docker-compose -f deploy/docker-compose.yml up --build
+```
+
+### 4. Check that it works
+Open in your browser:<br>
+🔗 http://localhost:8000/docs

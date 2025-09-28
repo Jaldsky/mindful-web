@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: ./deploy/docker/service.Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL
+    networks:
+      - mindfulweb-net
+
+  db:
+    image: postgres:16
+    env_file:
+      - ../.env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - mindfulweb-net
+
+  redis:
+    image: redis:alpine
+    networks:
+      - mindfulweb-net
+
+  worker:
+    build:
+      context: ..
+      dockerfile: ./deploy/docker/service.Dockerfile
+    env_file:
+      - ../.env
+    environment:
+      - DATABASE_URL
+      - REDIS_URL
+    networks:
+      - mindfulweb-net
+    depends_on:
+      - redis
+      - db
+    command: [".venv/bin/python", "-m", "celery", "--config", "deploy.config.celery_conf", "-A", "app.celery", "worker", "--loglevel=info"]
+
+  beat:
+    build:
+      context: ..
+      dockerfile: ./deploy/docker/service.Dockerfile
+    env_file:
+      - ../.env
+    environment:
+      - REDIS_URL
+    networks:
+      - mindfulweb-net
+    depends_on:
+      - redis
+    command: [".venv/bin/python", "-m", "celery", "--config", "deploy.config.celery_conf", "-A", "app.celery", "beat", "--loglevel=info"]
+
+volumes:
+  pgdata:
+
+networks:
+  mindfulweb-net:
+    driver: bridge
