@@ -1,0 +1,25 @@
+exclude: "^venv/|^env/"
+default_stages: [pre-commit]
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace  # проверка наличия лишних пробелов в конце строк
+      - id: end-of-file-fixer  # проверка символа конца файла (end-of-file marker) в файлах
+      - id: check-added-large-files  # проверка репозитория на наличие больших файлов
+      - id: check-case-conflict  # проверка на конфликты в файлах, связанные с регистром символов в именах файлов
+      - id: check-merge-conflict  # проверка на наличие конфликтов при merge
+      - id: detect-private-key  # проверка на наличие закрытых ключей в репозитории
+      - id: check-yaml  # проверка корректности YAML-файлов
+      - id: check-toml  # проверка корректности TOML-файлов
+      - id: name-tests-test  # проверка названий тестовых файлов
+        files: .*test.py
+        exclude: .*\/helpers\.py
+
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.9.1
+    hooks:
+      - id: ruff
+        args: [ --fix ]
+      - id: ruff-format

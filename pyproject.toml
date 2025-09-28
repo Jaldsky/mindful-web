@@ -1,0 +1,85 @@
+[tool.poetry]
+name = "mindful-web"
+version = "0.1.0"
+description = "Open-source tool for mindful internet usage tracking and digital wellbeing"
+authors = ["Artem Ryzhenkov <ryzhenkovartg@gmail.com>"]
+repository = "https://github.com/Jaldsky/mindful-web"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.13"
+requests = "^2.32.3"
+uvicorn = "^0.35.0"
+gunicorn = "^23.0.0"
+celery = "^5.5.3"
+
+[tool.poetry.group.dev.dependencies]
+dotenv = "^0.9.9"
+pre-commit = "^4.2.0"
+ruff = "^0.9.1"
+
+[tool.poetry.scripts]
+dev-server = "uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
+worker = "celery -A app.worker worker --loglevel=info"
+beat = "celery -A app.worker beat --loglevel=info"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 119
+indent-width = 4
+exclude = [
+    ".git",
+    ".idea",
+    ".venv",
+    ".env",
+    ".pytest_cache",
+    "pycache",
+    "venv",
+    "env"
+]
+format.quote-style = "double"
+format.indent-style = "space"
+format.skip-magic-trailing-comma = false
+format.line-ending = "auto"
+lint.fixable = ["ALL"]
+lint.unfixable = []
+lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+lint.extend-select = []
+lint.extend-ignore = [
+    "A002",
+    "A003",
+    "C409",
+    "C417",
+    "C901",
+    "D100",
+    "D101",
+    "D102",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D107",
+    "D202",
+    "D203",
+    "D205",
+    "D208",
+    "D212",
+    "D400",
+    "D401",
+    "D403",
+    "F401",
+    "F403",
+    "F405",
+    "F821",
+    "E203",
+    "E721",
+    "SIM401",
+    "SIM910",
+    "W293"
+]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
