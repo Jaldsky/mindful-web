@@ -7,6 +7,7 @@ __pycache__/
 *.pyc
 .pytest_cache
 .ruff_cache
+poetry.lock
 
 # Virtual environments
 venv/
