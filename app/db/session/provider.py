@@ -1,8 +1,8 @@
 import logging
 
 from .manager import Manager
-from .types import DatabaseSession
-from ..secrets import DATABASE_URL
+from app.db.types import DatabaseSession
+from app.secrets import DATABASE_URL
 
 logger = logging.getLogger(__name__)
 

@@ -5,8 +5,8 @@ from logging import Logger
 
 from sqlalchemy.exc import ArgumentError, SQLAlchemyError
 
-from ...db.exception import DatabaseManagerException, DatabaseManagerMessages
-from ...db.manager import ManagerValidator, Manager
+from ...db.exceptions import DatabaseManagerException, DatabaseManagerMessages
+from app.db.session.manager import ManagerValidator, Manager
 
 
 class TestManagerValidator(unittest.TestCase):
