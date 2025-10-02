@@ -7,8 +7,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ArgumentError, SQLAlchemyError
 from sqlalchemy.orm import sessionmaker, Session
 
-from .types import DatabaseURL, DatabaseSession
-from ..db.exception import DatabaseManagerException, DatabaseManagerMessages
+from app.db.types import DatabaseURL, DatabaseSession
+from ..exceptions import DatabaseManagerException, DatabaseManagerMessages
 
 
 class ManagerInterface(ABC):
