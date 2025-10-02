@@ -2,8 +2,8 @@ from celery import Celery
 
 
 class CeleryConfigurator:
-    def __init__(self, url: str, database: int = 0):
-        self.redis_url = f"{url}/{database}"
+    def __init__(self, url: str):
+        self.redis_url = url
 
     def exec(self) -> Celery:
         redis_url = self.redis_url

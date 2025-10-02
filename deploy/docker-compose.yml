@@ -10,23 +10,35 @@ services:
     env_file:
       - ../.env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     environment:
       - DATABASE_URL
+    restart: unless-stopped
     networks:
       - mindfulweb-net
 
   db:
-    image: postgres:16
+    image: postgres:16-alpine
     env_file:
       - ../.env
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: >
+        /bin/sh -c 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
     networks:
       - mindfulweb-net
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
+    restart: unless-stopped
     networks:
       - mindfulweb-net
 
@@ -36,15 +48,15 @@ services:
       dockerfile: ./deploy/docker/service.Dockerfile
     env_file:
       - ../.env
-    environment:
-      - DATABASE_URL
-      - REDIS_URL
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: [".venv/bin/python", "-m", "celery", "--config", "deploy.config.celery_conf", "-A", "app.celery", "worker", "--loglevel=info"]
+    restart: unless-stopped
     networks:
       - mindfulweb-net
-    depends_on:
-      - redis
-      - db
-    command: [".venv/bin/python", "-m", "celery", "--config", "deploy.config.celery_conf", "-A", "app.celery", "worker", "--loglevel=info"]
 
   beat:
     build:
@@ -52,13 +64,15 @@ services:
       dockerfile: ./deploy/docker/service.Dockerfile
     env_file:
       - ../.env
-    environment:
-      - REDIS_URL
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: [".venv/bin/python", "-m", "celery", "--config", "deploy.config.celery_conf", "-A", "app.celery", "beat", "--loglevel=info"]
+    restart: unless-stopped
     networks:
       - mindfulweb-net
-    depends_on:
-      - redis
-    command: [".venv/bin/python", "-m", "celery", "--config", "deploy.config.celery_conf", "-A", "app.celery", "beat", "--loglevel=info"]
 
 volumes:
   pgdata:
