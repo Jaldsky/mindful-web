@@ -17,6 +17,8 @@ sys.path.insert(0, str(project_root))
 
 
 def init_db() -> None:
+    from sqlalchemy import text
+
     from app.db.session.provider import manager  # noqa: F401
     from app.db.models.tables import Base  # noqa: F401
     from app.db.models import tables  # noqa: F401
@@ -24,8 +26,8 @@ def init_db() -> None:
     engine = manager.get_engine()
 
     with engine.connect() as conn:
-        conn.execute("SELECT 1")
-    logger.info("Подключение к базе данных успешно")
+        conn.execute(text("SELECT 1"))
+    logger.info("✅ Подключение к базе данных успешно")
 
     Base.metadata.create_all(bind=engine)
     logger.info("✅ Таблицы успешно созданы")
@@ -35,5 +37,5 @@ if __name__ == "__main__":
     try:
         init_db()
     except Exception as e:
-        logger.error("❌ Ошибка при инициализации базы данных: %s", e)
+        logger.error(f"❌ Ошибка при инициализации базы данных: {e}")
         sys.exit(1)
