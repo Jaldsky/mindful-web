@@ -58,7 +58,7 @@ class DomainCategoryMapping(Base):
 
 
 class AttentionEvent(Base):
-    """Таблица событий."""
+    """Таблица событий внимания от расширения."""
 
     __tablename__ = "attention_events"
 
@@ -70,14 +70,18 @@ class AttentionEvent(Base):
         comment="ID пользователя, которому принадлежит событие",
     )
     domain = Column(String(255), nullable=False, comment="Домен, на котором произошло событие")
-    event_type = Column(String(10), nullable=False, comment="Тип события: 'focus' или 'blur'")
+    event_type = Column(
+        String(10),
+        nullable=False,
+        comment="Тип события внимания: active (пользователь перешёл на вкладку) или inactive (покинул вкладку)",
+    )
     timestamp = Column(DateTime(timezone=True), nullable=False, comment="Точное время события в UTC (от браузера)")
 
-    __table_args__ = (CheckConstraint(event_type.in_(["focus", "blur"]), name="valid_event_type"),)
+    __table_args__ = (CheckConstraint(event_type.in_(["active", "inactive"]), name="valid_attention_event_type"),)
 
 
 class DailyDomainSummary(Base):
-    """Таблица агрегированного отчета на домене за день."""
+    """Таблица агрегированного отчёта по доменам за день."""
 
     __tablename__ = "daily_domain_summaries"
 
@@ -85,10 +89,8 @@ class DailyDomainSummary(Base):
     user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, comment="ID пользователя")
     domain = Column(String(255), nullable=False, comment="Домен, по которому собрана статистика")
     date = Column(Date, nullable=False, comment="Дата отчёта (без времени, в UTC)")
-    total_seconds = Column(
-        Integer, nullable=False, comment="Суммарное время пребывания в секундах (только по завершённым сессиям)"
-    )
-    focus_count = Column(Integer, nullable=False, comment="Количество фокусировок на домене за день")
+    total_seconds = Column(Integer, nullable=False, comment="Суммарное время активного пребывания в секундах")
+    active_count = Column(Integer, nullable=False, comment="Количество переходов на домен за день")
     generated_at = Column(
         DateTime(timezone=True), nullable=False, server_default="now()", comment="Время генерации отчёта (UTC)"
     )
