@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
+from contextlib import asynccontextmanager
 from logging import Logger
 from typing import Any, NoReturn
 from urllib.parse import urlparse
-from sqlalchemy import create_engine
-from sqlalchemy.engine import Engine
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker, AsyncEngine
 from sqlalchemy.exc import ArgumentError, SQLAlchemyError
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session
 
 from app.db.types import DatabaseURL, DatabaseSession
 from ..exceptions import DatabaseManagerException, DatabaseManagerMessages
@@ -15,7 +15,8 @@ class ManagerInterface(ABC):
     """Интерфейс для класса менеджера базы данных."""
 
     @abstractmethod
-    def get_session(self):
+    @asynccontextmanager
+    async def get_session(self):
         """Метод получения генератора сессии базы данных с автоматической очисткой."""
 
     @abstractmethod
@@ -26,7 +27,7 @@ class ManagerInterface(ABC):
 class ManagerValidator:
     """Класс валидирующий параметры."""
 
-    SUPPORTED_SCHEMES = {"sqlite", "postgresql", "postgres", "mysql", "mariadb", "oracle", "mssql"}
+    SUPPORTED_SCHEMES = {"sqlite+aiosqlite", "postgresql", "postgres", "mysql", "mariadb", "oracle", "mssql"}
     exception = DatabaseManagerException
     messages = DatabaseManagerMessages
 
@@ -120,7 +121,7 @@ class Manager(ManagerBase, ManagerInterface):
         self._engine = self._create_engine()
         self._sessionmaker = self._create_sessionmaker()
 
-    def _create_engine(self) -> Engine:
+    def _create_engine(self) -> AsyncEngine:
         """Метод создания SQLAlchemy Engine.
 
         Returns:
@@ -130,7 +131,11 @@ class Manager(ManagerBase, ManagerInterface):
             DatabaseManagerException: При ошибках создания движка.
         """
         try:
-            return create_engine(self._database_url, pool_pre_ping=True)
+            return create_async_engine(
+                self._database_url,
+                pool_pre_ping=True,
+                echo=False,
+            )
         except ArgumentError as e:
             message = self.messages.INVALID_ENGINE_CONFIG_ERROR.format(error=str(e))
             self._logger.error(message)
@@ -140,7 +145,7 @@ class Manager(ManagerBase, ManagerInterface):
             self._logger.error(message)
             raise self.exception(message) from e
 
-    def _create_sessionmaker(self) -> sessionmaker:
+    def _create_sessionmaker(self) -> async_sessionmaker:
         """Метод создания sessionmaker.
 
         Returns:
@@ -150,13 +155,20 @@ class Manager(ManagerBase, ManagerInterface):
             DatabaseManagerException: При ошибках создания sessionmaker.
         """
         try:
-            return sessionmaker(autocommit=False, autoflush=False, bind=self._engine)
+            return async_sessionmaker(
+                bind=self._engine,
+                class_=AsyncSession,
+                expire_on_commit=False,
+                autoflush=False,
+                autocommit=False,
+            )
         except Exception as e:
-            message = self.messages.ENGINE_CREATION_FAILED_ERROR.format(error=str(e))
+            message = self.messages.SESSIONMAKER_CREATION_FAILED_ERROR.format(error=str(e))
             self._logger.error(message)
             raise self.exception(message) from e
 
-    def get_session(self) -> DatabaseSession:
+    @asynccontextmanager
+    async def get_session(self) -> DatabaseSession:
         """Метод получения генератора сессии базы данных с автоматической очисткой.
 
         Yields:
@@ -189,7 +201,7 @@ class Manager(ManagerBase, ManagerInterface):
                 except Exception as close_err:
                     self._logger.warning(self.messages.CLOSE_FAILED_ERROR.format(error=str(close_err)))
 
-    def get_engine(self) -> Engine:
+    def get_engine(self) -> AsyncEngine:
         """Метод получения engine базы данных для прямого использования.
 
         Returns:

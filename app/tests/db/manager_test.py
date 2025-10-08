@@ -1,15 +1,17 @@
-import unittest
+import asyncio
+from unittest import TestCase, mock
 from unittest.mock import patch, Mock
 from urllib.parse import urlparse
 from logging import Logger
 
-from sqlalchemy.exc import ArgumentError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import text
 
 from ...db.exceptions import DatabaseManagerException, DatabaseManagerMessages
 from app.db.session.manager import ManagerValidator, Manager
 
 
-class TestManagerValidator(unittest.TestCase):
+class TestManagerValidator(TestCase):
     """Тесты для класса ManagerValidator."""
 
     def test_valid_postgresql_url(self):
@@ -99,16 +101,20 @@ class TestManagerValidator(unittest.TestCase):
         self.assertEqual(validator._database_url, url)
 
 
-class TestManager(unittest.TestCase):
-    """Тесты для класса Manager."""
+class TestManager(TestCase):
+    """Тесты для асинхронного класса Manager (с синхронными тестами)."""
 
     def setUp(self):
         self.logger = Mock(spec=Logger)
-        self.valid_url = "sqlite:///:memory:"
+        self.valid_url = "sqlite+aiosqlite:///:memory:"
 
-    @patch.object(ManagerValidator, "_validate")
-    @patch("app.db.manager.create_engine")
-    @patch("app.db.manager.sessionmaker")
+    def _run_async(self, coro):
+        """Вспомогательный метод для запуска асинхронного кода в синхронном тесте."""
+        return asyncio.run(coro)
+
+    @patch.object(Manager, "_validate")
+    @patch("app.db.session.manager.create_async_engine")
+    @patch("app.db.session.manager.async_sessionmaker")
     def test_manager_initialization_success(self, mock_sessionmaker, mock_create_engine, mock_validate):
         """Успешная инициализация менеджера."""
         mock_engine = Mock()
@@ -118,41 +124,34 @@ class TestManager(unittest.TestCase):
 
         manager = Manager(logger=self.logger, database_url=self.valid_url)
 
-        mock_create_engine.assert_called_once_with(self.valid_url, pool_pre_ping=True)
-        mock_sessionmaker.assert_called_once_with(autocommit=False, autoflush=False, bind=mock_engine)
+        mock_create_engine.assert_called_once_with(self.valid_url, pool_pre_ping=True, echo=False)
+        mock_sessionmaker.assert_called_once_with(
+            bind=mock_engine,
+            class_=mock.ANY,
+            expire_on_commit=False,
+            autoflush=False,
+            autocommit=False,
+        )
         self.assertEqual(manager._engine, mock_engine)
         self.assertEqual(manager._sessionmaker, mock_session_factory)
         mock_validate.assert_called_once()
 
-    @patch.object(ManagerValidator, "_validate")
-    @patch("app.db.manager.create_engine")
+    @patch.object(Manager, "_validate")
+    @patch("app.db.session.manager.create_async_engine")
     def test_manager_engine_creation_argument_error(self, mock_create_engine, _):
         """Ошибка ArgumentError при создании engine."""
-        mock_create_engine.side_effect = ArgumentError("Invalid config")
+        mock_create_engine.side_effect = ValueError("Invalid config")
 
         with self.assertRaises(DatabaseManagerException) as cm:
             Manager(logger=self.logger, database_url=self.valid_url)
 
-        expected_msg = DatabaseManagerMessages.INVALID_ENGINE_CONFIG_ERROR.format(error="Invalid config")
+        expected_msg = DatabaseManagerMessages.ENGINE_CREATION_FAILED_ERROR.format(error="Invalid config")
         self.assertEqual(str(cm.exception), expected_msg)
         self.logger.error.assert_called_with(expected_msg)
 
-    @patch.object(ManagerValidator, "_validate")
-    @patch("app.db.manager.create_engine")
-    def test_manager_engine_creation_generic_error(self, mock_create_engine, _):
-        """Общая ошибка при создании engine."""
-        mock_create_engine.side_effect = ValueError("Boom!")
-
-        with self.assertRaises(DatabaseManagerException) as cm:
-            Manager(logger=self.logger, database_url=self.valid_url)
-
-        expected_msg = DatabaseManagerMessages.ENGINE_CREATION_FAILED_ERROR.format(error="Boom!")
-        self.assertEqual(str(cm.exception), expected_msg)
-        self.logger.error.assert_called_with(expected_msg)
-
-    @patch.object(ManagerValidator, "_validate")
-    @patch("app.db.manager.create_engine")
-    @patch("app.db.manager.sessionmaker")
+    @patch.object(Manager, "_validate")
+    @patch("app.db.session.manager.create_async_engine")
+    @patch("app.db.session.manager.async_sessionmaker")
     def test_get_engine_returns_engine(self, mock_sessionmaker, mock_create_engine, _):
         """Метод get_engine возвращает движок."""
         mock_engine = Mock()
@@ -164,127 +163,151 @@ class TestManager(unittest.TestCase):
 
         self.assertIs(engine, mock_engine)
 
-    @patch.object(ManagerValidator, "_validate")
-    @patch("app.db.manager.create_engine")
-    @patch("app.db.manager.sessionmaker")
+    @patch.object(Manager, "_validate")
+    @patch("app.db.session.manager.create_async_engine")
+    @patch("app.db.session.manager.async_sessionmaker")
     def test_get_session_success(self, mock_sessionmaker, mock_create_engine, _):
         """Успешное получение и закрытие сессии."""
         mock_engine = Mock()
         mock_create_engine.return_value = mock_engine
 
         mock_session = Mock()
-        mock_session_factory = Mock(return_value=mock_session)
+        mock_session.close = Mock(side_effect=lambda: None)
+
+        mock_session_factory = Mock()
+        mock_session_factory.return_value = mock_session
         mock_sessionmaker.return_value = mock_session_factory
 
         manager = Manager(logger=self.logger, database_url=self.valid_url)
 
-        session_gen = manager.get_session()
-        session = next(session_gen)
+        async def run_session():
+            async with manager.get_session() as session:
+                self.assertIs(session, mock_session)
+            mock_session.close.assert_called_once()
 
-        self.assertIs(session, mock_session)
+        self._run_async(run_session())
 
-        with self.assertRaises(StopIteration):
-            next(session_gen)
-
-        mock_session.close.assert_called_once()
-
-    @patch.object(ManagerValidator, "_validate")
-    @patch("app.db.manager.create_engine")
+    @patch.object(Manager, "_validate")
+    @patch("app.db.session.manager.create_async_engine")
     def test_sessionmaker_creation_fails(self, mock_create_engine, _):
         """Ошибка при создании sessionmaker."""
         mock_engine = Mock()
         mock_create_engine.return_value = mock_engine
 
-        with patch("app.db.manager.sessionmaker", side_effect=RuntimeError("Session factory failed")):
+        with patch("app.db.session.manager.async_sessionmaker", side_effect=RuntimeError("Session factory failed")):
             with self.assertRaises(DatabaseManagerException) as cm:
                 Manager(logger=self.logger, database_url=self.valid_url)
 
-        expected_msg = DatabaseManagerMessages.ENGINE_CREATION_FAILED_ERROR.format(error="Session factory failed")
+        expected_msg = DatabaseManagerMessages.SESSIONMAKER_CREATION_FAILED_ERROR.format(
+            error="Session factory failed"
+        )
         self.assertEqual(str(cm.exception), expected_msg)
         self.logger.error.assert_called_with(expected_msg)
 
-    @patch.object(ManagerValidator, "_validate")
-    @patch("app.db.manager.create_engine")
-    @patch("app.db.manager.sessionmaker")
+    @patch.object(Manager, "_validate")
+    @patch("app.db.session.manager.create_async_engine")
+    @patch("app.db.session.manager.async_sessionmaker")
     def test_get_session_sqlalchemy_error_handling(self, mock_sessionmaker, mock_create_engine, _):
         """Обработка SQLAlchemyError внутри сессии."""
         mock_engine = Mock()
         mock_create_engine.return_value = mock_engine
 
         mock_session = Mock()
+        mock_session.rollback = Mock()
+        mock_session.close = Mock()
+
         mock_session_factory = Mock(return_value=mock_session)
         mock_sessionmaker.return_value = mock_session_factory
 
         manager = Manager(logger=self.logger, database_url=self.valid_url)
 
-        session_gen = manager.get_session()
-        next(session_gen)
+        async def run_with_error():
+            try:
+                async with manager.get_session():
+                    raise SQLAlchemyError("Query failed")
+            except DatabaseManagerException as e:
+                expected_msg = DatabaseManagerMessages.SESSION_ERROR.format(error="Query failed")
+                self.assertEqual(str(e), expected_msg)
+                self.logger.error.assert_called_with(expected_msg)
+                mock_session.rollback.assert_called_once()
+                mock_session.close.assert_called_once()
+                return
+            self.fail("DatabaseManagerException not raised")
 
-        test_error = SQLAlchemyError("Query failed")
+        self._run_async(run_with_error())
 
-        with self.assertRaises(DatabaseManagerException) as cm:
-            session_gen.throw(test_error)
-
-        expected_msg = DatabaseManagerMessages.SESSION_ERROR.format(error="Query failed")
-        self.assertEqual(str(cm.exception), expected_msg)
-
-        mock_session.rollback.assert_called_once()
-        mock_session.close.assert_called_once()
-
-        self.logger.error.assert_called_with(expected_msg)
-
-    @patch.object(ManagerValidator, "_validate")
-    @patch("app.db.manager.create_engine")
-    @patch("app.db.manager.sessionmaker")
+    @patch.object(Manager, "_validate")
+    @patch("app.db.session.manager.create_async_engine")
+    @patch("app.db.session.manager.async_sessionmaker")
     def test_get_session_rollback_fails(self, mock_sessionmaker, mock_create_engine, _):
         """Ошибка при rollback — логируется, но не маскирует основную ошибку."""
         mock_engine = Mock()
         mock_create_engine.return_value = mock_engine
 
         mock_session = Mock()
-        mock_session.rollback.side_effect = Exception("Rollback crashed")
+        mock_session.rollback = Mock(side_effect=Exception("Rollback crashed"))
+        mock_session.close = Mock()
+
         mock_session_factory = Mock(return_value=mock_session)
         mock_sessionmaker.return_value = mock_session_factory
 
         manager = Manager(logger=self.logger, database_url=self.valid_url)
 
-        session_gen = manager.get_session()
-        next(session_gen)
+        async def run_with_rollback_fail():
+            try:
+                async with manager.get_session():
+                    raise RuntimeError("Main error")
+            except DatabaseManagerException as e:
+                expected_msg = DatabaseManagerMessages.UNEXPECTED_SESSION_ERROR.format(error="Main error")
+                self.assertEqual(str(e), expected_msg)
+                mock_session.rollback.assert_called_once()
+                mock_session.close.assert_called_once()
+                self.logger.warning.assert_called_with(
+                    DatabaseManagerMessages.ROLLBACK_FAILED_ERROR.format(error="Rollback crashed")
+                )
+                return
+            self.fail("DatabaseManagerException not raised")
 
-        main_error = RuntimeError("Main error")
+        self._run_async(run_with_rollback_fail())
 
-        with self.assertRaises(DatabaseManagerException) as cm:
-            session_gen.throw(main_error)
-
-        expected_main_msg = DatabaseManagerMessages.UNEXPECTED_SESSION_ERROR.format(error="Main error")
-        self.assertEqual(str(cm.exception), expected_main_msg)
-
-        mock_session.rollback.assert_called_once()
-
-        expected_rollback_msg = DatabaseManagerMessages.ROLLBACK_FAILED_ERROR.format(error="Rollback crashed")
-        self.logger.warning.assert_called_with(expected_rollback_msg)
-
-        mock_session.close.assert_called_once()
-
-    @patch.object(ManagerValidator, "_validate")
-    @patch("app.db.manager.create_engine")
-    @patch("app.db.manager.sessionmaker")
+    @patch.object(Manager, "_validate")
+    @patch("app.db.session.manager.create_async_engine")
+    @patch("app.db.session.manager.async_sessionmaker")
     def test_get_session_close_fails(self, mock_sessionmaker, mock_create_engine, _):
         """Ошибка при закрытии сессии — логируется."""
         mock_engine = Mock()
         mock_create_engine.return_value = mock_engine
 
         mock_session = Mock()
-        mock_session.close.side_effect = OSError("Close failed")
+        mock_session.close = Mock(side_effect=OSError("Close failed"))
+
         mock_session_factory = Mock(return_value=mock_session)
         mock_sessionmaker.return_value = mock_session_factory
 
         manager = Manager(logger=self.logger, database_url=self.valid_url)
 
-        session_gen = manager.get_session()
-        next(session_gen)
+        async def run_with_close_fail():
+            async with manager.get_session():
+                pass
 
-        with self.assertRaises(StopIteration):
-            next(session_gen)
+        self._run_async(run_with_close_fail())
 
         self.logger.warning.assert_called_with(DatabaseManagerMessages.CLOSE_FAILED_ERROR.format(error="Close failed"))
+
+    def test_manager_real_sqlite_connection_and_query(self):
+        """Подключение к реальной in-memory SQLite и выполнение запроса."""
+        manager = Manager(logger=self.logger, database_url=self.valid_url)
+
+        async def _test_session():
+            async with manager.get_session() as session:
+                await session.execute(text("CREATE TABLE test (id INTEGER PRIMARY KEY, name TEXT)"))
+                await session.execute(text("INSERT INTO test (name) VALUES ('Async SQLite Test')"))
+                await session.commit()
+
+                result = await session.execute(text("SELECT name FROM test WHERE id = 1"))
+                row = result.fetchone()
+                self.assertEqual(row[0], "Async SQLite Test")
+
+        self._run_async(_test_session())
+
+        self.logger.error.assert_not_called()
