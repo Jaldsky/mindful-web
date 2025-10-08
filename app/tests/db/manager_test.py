@@ -16,41 +16,27 @@ class TestManagerValidator(TestCase):
 
     def test_valid_postgresql_url(self):
         """Проверка корректного PostgreSQL URL."""
-        url = "postgresql://user:pass@localhost:5432/mydb"
+        url = "postgresql+asyncpg://user:pass@localhost:5432/mydb"
         validator = ManagerValidator(url)
         self.assertEqual(validator._database_url, url)
 
     def test_valid_sqlite_file_url(self):
         """Проверка корректного SQLite URL (файл)."""
-        url = "sqlite:///test.db"
+        url = "sqlite+aiosqlite:///test.db"
         validator = ManagerValidator(url)
         self.assertEqual(validator._database_url, url)
 
     def test_valid_sqlite_memory_url(self):
         """Проверка корректного SQLite in-memory URL."""
-        url = "sqlite:///:memory:"
-        validator = ManagerValidator(url)
-        self.assertEqual(validator._database_url, url)
-
-    def test_valid_mysql_url(self):
-        """Проверка корректного MySQL URL."""
-        url = "mysql://user:pass@localhost/mydb"
+        url = "sqlite+aiosqlite:///:memory:"
         validator = ManagerValidator(url)
         self.assertEqual(validator._database_url, url)
 
     def test_valid_postgres_alias_url(self):
         """Проверка схемы 'postgres' как алиаса для 'postgresql'."""
-        url = "postgres://user:pass@localhost/mydb"
+        url = "postgresql+asyncpg://user:pass@localhost/mydb"
         validator = ManagerValidator(url)
         self.assertEqual(validator._database_url, url)
-
-    def test_other_supported_schemes(self):
-        """Проверка остальных поддерживаемых схем: oracle, mssql, mariadb."""
-        for scheme in ["oracle", "mssql", "mariadb"]:
-            with self.subTest(scheme=scheme):
-                url = f"{scheme}://user:pass@localhost/mydb"
-                validator = ManagerValidator(url)
-                self.assertEqual(validator._database_url, url)
 
     def test_invalid_url_type_raises_exception(self):
         """Передача не-строки должна вызывать исключение."""
@@ -91,12 +77,12 @@ class TestManagerValidator(TestCase):
     def test_invalid_sqlite_format_with_netloc_and_no_path(self):
         """SQLite URL вида 'sqlite://host' без пути — недопустим."""
         with self.assertRaises(DatabaseManagerException) as cm:
-            ManagerValidator("sqlite://somehost")
+            ManagerValidator("sqlite+aiosqlite://somehost")
         self.assertEqual(str(cm.exception), DatabaseManagerMessages.INVALID_SQLITE_FORMAT_ERROR)
 
     def test_sqlite_with_netloc_and_path_is_allowed(self):
         """SQLite с netloc и путём (редко, но допустимо в некоторых контекстах) — не блокируем явно."""
-        url = "sqlite://user@host/path/to/db.sqlite"
+        url = "sqlite+aiosqlite://user@host/path/to/db.sqlite"
         validator = ManagerValidator(url)
         self.assertEqual(validator._database_url, url)
 

@@ -27,7 +27,7 @@ class ManagerInterface(ABC):
 class ManagerValidator:
     """Класс валидирующий параметры."""
 
-    SUPPORTED_SCHEMES = {"sqlite+aiosqlite", "postgresql", "postgres", "mysql", "mariadb", "oracle", "mssql"}
+    SUPPORTED_SCHEMES = {"sqlite+aiosqlite", "postgresql+asyncpg"}
     exception = DatabaseManagerException
     messages = DatabaseManagerMessages
 
@@ -81,7 +81,7 @@ class ManagerValidator:
             message = self.messages.UNSUPPORTED_SCHEME_ERROR.format(scheme=parsed.scheme, supported=supported)
             raise self.exception(message)
 
-        if parsed.scheme == "sqlite":
+        if parsed.scheme == "sqlite+aiosqlite":
             if parsed.netloc and not parsed.path:
                 raise self.exception(self.messages.INVALID_SQLITE_FORMAT_ERROR)
 
