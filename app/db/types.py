@@ -1,6 +1,6 @@
 from typing import Generator
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 ExceptionMessage = str
 DatabaseURL = str
-DatabaseSession = Generator[Session, None, None]
+DatabaseSession = Generator[AsyncSession, None, None]

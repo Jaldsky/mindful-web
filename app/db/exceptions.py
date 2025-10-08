@@ -17,6 +17,7 @@ class DatabaseManagerMessages(StringEnum):
     )
     INVALID_SQLITE_FORMAT_ERROR: ExceptionMessage = "Invalid SQLite URL format!"
     ENGINE_CREATION_FAILED_ERROR: ExceptionMessage = "Failed to initialize database engine: {error}!"
+    SESSIONMAKER_CREATION_FAILED_ERROR: ExceptionMessage = "Failed to initialize database sessionmaker: {error}!"
     INVALID_ENGINE_CONFIG_ERROR: ExceptionMessage = "Invalid database configuration: {error}!"
     SESSION_ERROR: ExceptionMessage = "Database session error: {error}!"
     UNEXPECTED_SESSION_ERROR: ExceptionMessage = "Unexpected session error: {error}!"

@@ -19,6 +19,8 @@ sqlalchemy = "^2.0.43"
 psycopg2-binary = "^2.9.10"
 
 [tool.poetry.group.dev.dependencies]
+aiosqlite = "^0.21.0"
+greenlet = "^3.2.4"
 dotenv = "^0.9.9"
 pre-commit = "^4.2.0"
 ruff = "^0.9.1"
