@@ -16,7 +16,8 @@ gunicorn = "^23.0.0"
 celery = "^5.5.3"
 redis = "^6.4.0"
 sqlalchemy = "^2.0.43"
-psycopg2-binary = "^2.9.10"
+asyncpg = "^0.30.0"
+httpx = "^0.28.1"
 
 [tool.poetry.group.dev.dependencies]
 aiosqlite = "^0.21.0"

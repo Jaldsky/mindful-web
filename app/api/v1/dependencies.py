@@ -46,7 +46,7 @@ def get_user_id_from_header(
         return user_uuid
     except (ValueError, AttributeError):
         message = "Invalid X-User-ID: must be a valid UUID4 string"
-        logger.exception(message)
+        logger.warning(message)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=message,
@@ -66,6 +66,6 @@ async def get_db_session() -> DatabaseSession:
         async with manager.get_session() as session:
             yield session
     except Exception as e:
-        logger.exception(f"Failed to create database session: {e}")
+        logger.warning(f"Failed to create database session: {e}")
         message = "Failed to create database session"
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=message)

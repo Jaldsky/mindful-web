@@ -1,11 +1,11 @@
+import asyncio
 from unittest import TestCase
-from unittest.mock import patch, MagicMock, ANY
+from unittest.mock import patch, AsyncMock
 from uuid import uuid4, uuid3, uuid5, uuid1, NAMESPACE_DNS
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dependencies import get_user_id_from_header, get_db_session
-from app.db.types import DatabaseSession
 
 
 class TestGetUserIdFromHeader(TestCase):
@@ -74,75 +74,87 @@ class TestGetUserIdFromHeader(TestCase):
 
 
 class TestGetDbSession(TestCase):
-    @patch("app.api.v1.dependencies.Manager")
+    def _run_async(self, coro):
+        """Вспомогательный метод для запуска асинхронного кода."""
+        return asyncio.run(coro)
+
+    @patch("app.api.v1.dependencies.manager")
     def test_valid_session_returned(self, mock_manager_class):
         """Успешное получение сессии из менеджера."""
-        mock_session = MagicMock(spec=Session)
-        mock_manager_instance = MagicMock()
-        mock_manager_instance.get_session.return_value = mock_session
-        mock_manager_class.return_value.__enter__.return_value = mock_manager_instance
+        mock_session = AsyncMock(spec=AsyncSession)
 
-        gen = get_db_session()
-        session = next(gen)
+        mock_session_context = AsyncMock()
+        mock_session_context.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session_context.__aexit__ = AsyncMock(return_value=None)
 
-        self.assertIs(session, mock_session)
-        self.assertIsInstance(session, Session)
+        mock_manager_class.get_session.return_value = mock_session_context
 
-        with self.assertRaises(StopIteration):
-            next(gen)
-
-        mock_manager_class.assert_called_once_with(logger=ANY, database_url=ANY)
-        mock_manager_instance.get_session.assert_called_once()
-
-    @patch("app.api.v1.dependencies.Manager")
-    def test_manager_exception_raises_http_500(self, mock_manager_class):
-        mock_manager_class.side_effect = Exception("Connection failed")
-
-        with self.assertLogs("app.api.v1.dependencies", level="ERROR") as log:
+        async def test_coro():
             gen = get_db_session()
-            with self.assertRaises(HTTPException):
-                next(gen)
+            session = await gen.__anext__()
+            self.assertIs(session, mock_session)
+            self.assertIsInstance(session, AsyncSession)
 
-        self.assertIn("Failed to create database session", log.output[0])
+            with self.assertRaises(StopAsyncIteration):
+                await gen.__anext__()
 
-    @patch("app.api.v1.dependencies.Manager")
+        self._run_async(test_coro())
+
+    @patch("app.api.v1.dependencies.manager")
+    def test_manager_exception_raises_http_500(self, mock_manager):
+        """Исключение при вызове manager.get_session() вызывает HTTP 500."""
+        mock_manager.get_session.side_effect = Exception("Failed to create session factory")
+
+        async def test_coro():
+            with self.assertLogs("app.api.v1.dependencies", level="WARNING") as log:
+                gen = get_db_session()
+                with self.assertRaises(HTTPException) as cm:
+                    await gen.__anext__()
+                self.assertEqual(cm.exception.status_code, 500)
+                self.assertEqual(cm.exception.detail, "Failed to create database session")
+                self.assertTrue(any("Failed to create database session" in record for record in log.output))
+
+        self._run_async(test_coro())
+
+    @patch("app.api.v1.dependencies.manager")
     def test_get_session_exception_raises_http_500(self, mock_manager_class):
-        """Исключение при вызове get_session() вызывает HTTP 500."""
-        mock_manager_instance = MagicMock()
-        mock_manager_instance.get_session.side_effect = Exception("Session init failed")
-        mock_manager_class.return_value.__enter__.return_value = mock_manager_instance
+        """Исключение при входе в контекстный менеджер вызывает HTTP 500."""
+        mock_session_context = AsyncMock()
+        mock_session_context.__aenter__ = AsyncMock(side_effect=Exception("Connection failed"))
+        mock_manager_class.get_session.return_value = mock_session_context
 
-        with self.assertLogs("app.api.v1.dependencies", level="ERROR") as log:
-            gen = get_db_session()
-            with self.assertRaises(HTTPException) as cm:
-                next(gen)
+        async def test_coro():
+            with self.assertLogs("app.api.v1.dependencies", level="WARNING") as log:
+                gen = get_db_session()
+                with self.assertRaises(HTTPException) as cm:
+                    await gen.__anext__()
+                self.assertEqual(cm.exception.status_code, 500)
+                self.assertEqual(cm.exception.detail, "Failed to create database session")
+                self.assertTrue(any("Failed to create database session" in record for record in log.output))
 
-        self.assertEqual(cm.exception.status_code, 500)
-        self.assertEqual(cm.exception.detail, "Failed to create database session")
+        self._run_async(test_coro())
 
-        self.assertTrue(
-            any("Failed to create database session" in record for record in log.output),
-            "Expected error message not found in logs",
-        )
-
-    @patch("app.api.v1.dependencies.Manager")
+    @patch("app.api.v1.dependencies.manager")
     def test_session_is_yielded_only_once(self, mock_manager_class):
         """Генератор должен выдавать ровно одну сессию."""
-        mock_session = MagicMock(spec=DatabaseSession)
-        mock_manager_instance = MagicMock()
-        mock_manager_instance.get_session.return_value = mock_session
-        mock_manager_class.return_value.__enter__.return_value = mock_manager_instance
+        mock_session = AsyncMock(spec=AsyncSession)
+        mock_session_context = AsyncMock()
+        mock_session_context.__aenter__ = AsyncMock(return_value=mock_session)
+        mock_session_context.__aexit__ = AsyncMock()
+        mock_manager_class.get_session.return_value = mock_session_context
 
-        gen = get_db_session()
+        async def test_coro():
+            gen = get_db_session()
+            session1 = await gen.__anext__()
+            self.assertIs(session1, mock_session)
 
-        session1 = next(gen)
-        self.assertIs(session1, mock_session)
+            with self.assertRaises(StopAsyncIteration):
+                await gen.__anext__()
 
-        with self.assertRaises(StopIteration):
-            next(gen)
+        self._run_async(test_coro())
 
     def test_function_is_generator(self):
-        """Функция должна быть генератором."""
+        """Функция должна быть асинхронным генератором."""
         gen = get_db_session()
-        self.assertTrue(hasattr(gen, "__iter__"))
-        self.assertTrue(hasattr(gen, "__next__"))
+        self.assertTrue(hasattr(gen, "__aiter__"))
+        self.assertTrue(hasattr(gen, "__anext__"))

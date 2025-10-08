@@ -12,8 +12,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    environment:
-      - DATABASE_URL
     restart: unless-stopped
     networks:
       - mindfulweb-net
