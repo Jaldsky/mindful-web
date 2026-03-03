@@ -1,15 +1,25 @@
 from typing import NoReturn
+from urllib.parse import urlparse
+from string import ascii_letters, digits
 
 from email_validator import EmailNotValidError
 
 from .constants import (
+    MAX_OAUTH_CODE_LENGTH,
+    MAX_OAUTH_CODE_VERIFIER_LENGTH,
     MAX_PASSWORD_LENGTH,
+    MAX_OAUTH_STATE_LENGTH,
     MAX_USERNAME_LENGTH,
+    MIN_OAUTH_CODE_VERIFIER_LENGTH,
     MIN_PASSWORD_LENGTH,
     MIN_USERNAME_LENGTH,
 )
 from .exceptions import (
     InvalidEmailFormatException,
+    InvalidOAuthCodeFormatException,
+    InvalidOAuthCodeVerifierFormatException,
+    InvalidOAuthRedirectUriFormatException,
+    InvalidOAuthStateFormatException,
     InvalidPasswordFormatException,
     TokenInvalidException,
     InvalidUsernameFormatException,
@@ -18,6 +28,9 @@ from .exceptions import (
 from .types import Password, RefreshToken, AccessToken
 from ..types import Email, VerificationCode, Username
 from ..validators import validate_email_format
+
+
+OAUTH_CODE_VERIFIER_ALLOWED_CHARS = set(ascii_letters + digits + "-._~")
 
 
 class AuthServiceValidators:
@@ -126,3 +139,94 @@ class AuthServiceValidators:
         """
         if not token:
             raise TokenInvalidException(key="auth.errors.token_invalid", fallback="Token is invalid")
+
+    @classmethod
+    def validate_oauth_code(cls, code: str) -> None | NoReturn:
+        """Метод валидации OAuth authorization code.
+
+        Args:
+            code: Authorization code.
+
+        Raises:
+            InvalidOAuthCodeFormatException: Если код пустой или превышает максимально допустимую длину.
+        """
+        if not code:
+            raise InvalidOAuthCodeFormatException(
+                key="auth.errors.oauth_code_format_invalid",
+                fallback="OAuth code cannot be empty",
+            )
+        if len(code) > MAX_OAUTH_CODE_LENGTH:
+            raise InvalidOAuthCodeFormatException(
+                key="auth.errors.oauth_code_format_invalid",
+                fallback="OAuth code is too long",
+            )
+
+    @classmethod
+    def validate_oauth_redirect_uri(cls, redirect_uri: str) -> None | NoReturn:
+        """Метод валидации OAuth redirect URI.
+
+        Args:
+            redirect_uri: Redirect URI.
+
+        Raises:
+            InvalidOAuthRedirectUriFormatException: Если URI имеет неверный формат.
+        """
+        parsed = urlparse(redirect_uri)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            raise InvalidOAuthRedirectUriFormatException(
+                key="auth.errors.oauth_redirect_uri_format_invalid",
+                fallback="OAuth redirect URI format is invalid",
+            )
+
+    @classmethod
+    def validate_oauth_code_verifier(cls, code_verifier: str | None) -> None | NoReturn:
+        """Метод валидации OAuth PKCE code_verifier.
+
+        Args:
+            code_verifier: Значение PKCE code_verifier или None.
+
+        Raises:
+            InvalidOAuthCodeVerifierFormatException: Если verifier пустой, имеет
+            недопустимую длину или содержит недопустимые символы.
+        """
+        if code_verifier is None:
+            return
+        if not code_verifier:
+            raise InvalidOAuthCodeVerifierFormatException(
+                key="auth.errors.oauth_code_verifier_format_invalid",
+                fallback="OAuth code_verifier cannot be empty",
+            )
+        if not (MIN_OAUTH_CODE_VERIFIER_LENGTH <= len(code_verifier) <= MAX_OAUTH_CODE_VERIFIER_LENGTH):
+            raise InvalidOAuthCodeVerifierFormatException(
+                key="auth.errors.oauth_code_verifier_format_invalid",
+                fallback="OAuth code_verifier length is invalid",
+            )
+        if any(ch not in OAUTH_CODE_VERIFIER_ALLOWED_CHARS for ch in code_verifier):
+            raise InvalidOAuthCodeVerifierFormatException(
+                key="auth.errors.oauth_code_verifier_format_invalid",
+                fallback="OAuth code_verifier contains invalid characters",
+            )
+
+    @classmethod
+    def validate_oauth_state(cls, state: str | None) -> None | NoReturn:
+        """Метод валидации OAuth state.
+
+        Args:
+            state: Значение state.
+
+        Raises:
+            InvalidOAuthStateFormatException: Если state пустой или превышает
+            максимально допустимую длину.
+        """
+        if state is None:
+            return
+        if not state:
+            raise InvalidOAuthStateFormatException(
+                key="auth.errors.oauth_state_format_invalid",
+                fallback="OAuth state cannot be empty",
+            )
+        if len(state) > MAX_OAUTH_STATE_LENGTH:
+            raise InvalidOAuthStateFormatException(
+                key="auth.errors.oauth_state_format_invalid",
+                fallback="OAuth state is too long",
+            )

@@ -1,9 +1,8 @@
-from typing import Literal
-
 # Куки
 AUTH_ACCESS_COOKIE_NAME: str = "access_token"
 AUTH_REFRESH_COOKIE_NAME: str = "refresh_token"
 AUTH_ANON_COOKIE_NAME: str = "anon_token"
+AUTH_OAUTH_STATE_COOKIE_NAME: str = "oauth_state"
 AUTH_COOKIE_PATH: str = "/"
 
 # Константы валидации
@@ -11,3 +10,7 @@ MIN_USERNAME_LENGTH: int = 3
 MAX_USERNAME_LENGTH: int = 50
 MIN_PASSWORD_LENGTH: int = 8
 MAX_PASSWORD_LENGTH: int = 128
+MAX_OAUTH_CODE_LENGTH: int = 2048
+MAX_OAUTH_STATE_LENGTH: int = 512
+MIN_OAUTH_CODE_VERIFIER_LENGTH: int = 43
+MAX_OAUTH_CODE_VERIFIER_LENGTH: int = 128
