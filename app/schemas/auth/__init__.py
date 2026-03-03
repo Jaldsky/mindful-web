@@ -58,6 +58,15 @@ from .session import (
     SessionMethodNotAllowedSchema,
     SessionInternalServerErrorSchema,
 )
+from .oauth_login import (
+    OAuthLoginRequestSchema,
+    OAuthLoginResponseSchema,
+    OAuthLoginBadRequestSchema,
+    OAuthLoginUnauthorizedSchema,
+    OAuthLoginUnprocessableEntitySchema,
+    OAuthLoginMethodNotAllowedSchema,
+    OAuthLoginInternalServerErrorSchema,
+)
 
 __all__ = (
     # Common
@@ -113,4 +122,12 @@ __all__ = (
     "SessionResponseSchema",
     "SessionMethodNotAllowedSchema",
     "SessionInternalServerErrorSchema",
+    # OAuth login
+    "OAuthLoginRequestSchema",
+    "OAuthLoginResponseSchema",
+    "OAuthLoginBadRequestSchema",
+    "OAuthLoginUnauthorizedSchema",
+    "OAuthLoginUnprocessableEntitySchema",
+    "OAuthLoginMethodNotAllowedSchema",
+    "OAuthLoginInternalServerErrorSchema",
 )
