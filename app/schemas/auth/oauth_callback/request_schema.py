@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field, field_validator
 from pydantic.types import StrictStr
 
 
-class OAuthLoginRequestSchema(BaseModel):
-    """Схема запроса авторизации через OAuth провайдера."""
+class OAuthCallbackRequestSchema(BaseModel):
+    """Схема запроса обработки OAuth callback."""
 
     code: StrictStr = Field(..., description="Authorization code от OAuth провайдера")
     redirect_uri: StrictStr = Field(..., description="Redirect URI, использованный во время OAuth")

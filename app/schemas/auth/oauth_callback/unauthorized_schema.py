@@ -6,7 +6,7 @@ from ...error_response_schema import ErrorCode, ErrorResponseSchema
 from ..auth_error_code import AuthErrorCode
 
 
-class OAuthLoginUnprocessableEntitySchema(ErrorResponseSchema):
-    """Схема ошибки 422 Unprocessable Entity для OAuth login endpoint."""
+class OAuthCallbackUnauthorizedSchema(ErrorResponseSchema):
+    """Схема ошибки 401 Unauthorized для OAuth callback endpoint."""
 
     code: Union[ErrorCode, AuthErrorCode] = Field(..., description="Код ошибки")
