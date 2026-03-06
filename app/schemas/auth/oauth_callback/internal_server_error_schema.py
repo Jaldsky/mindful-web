@@ -7,8 +7,8 @@ from ...general import InternalServerErrorSchema
 from ..auth_error_code import AuthErrorCode
 
 
-class OAuthLoginInternalServerErrorSchema(InternalServerErrorSchema):
-    """Схема ошибки 500 Internal Server Error для OAuth login endpoint."""
+class OAuthCallbackInternalServerErrorSchema(InternalServerErrorSchema):
+    """Схема ошибки 500 Internal Server Error для OAuth callback endpoint."""
 
     code: Union[ErrorCode, AuthErrorCode] = Field(..., description="Код ошибки")
 

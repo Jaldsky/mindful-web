@@ -58,14 +58,14 @@ from .session import (
     SessionMethodNotAllowedSchema,
     SessionInternalServerErrorSchema,
 )
-from .oauth_login import (
-    OAuthLoginRequestSchema,
-    OAuthLoginResponseSchema,
-    OAuthLoginBadRequestSchema,
-    OAuthLoginUnauthorizedSchema,
-    OAuthLoginUnprocessableEntitySchema,
-    OAuthLoginMethodNotAllowedSchema,
-    OAuthLoginInternalServerErrorSchema,
+from .oauth_callback import (
+    OAuthCallbackRequestSchema,
+    OAuthCallbackResponseSchema,
+    OAuthCallbackBadRequestSchema,
+    OAuthCallbackUnauthorizedSchema,
+    OAuthCallbackUnprocessableEntitySchema,
+    OAuthCallbackMethodNotAllowedSchema,
+    OAuthCallbackInternalServerErrorSchema,
 )
 
 __all__ = (
@@ -122,12 +122,12 @@ __all__ = (
     "SessionResponseSchema",
     "SessionMethodNotAllowedSchema",
     "SessionInternalServerErrorSchema",
-    # OAuth login
-    "OAuthLoginRequestSchema",
-    "OAuthLoginResponseSchema",
-    "OAuthLoginBadRequestSchema",
-    "OAuthLoginUnauthorizedSchema",
-    "OAuthLoginUnprocessableEntitySchema",
-    "OAuthLoginMethodNotAllowedSchema",
-    "OAuthLoginInternalServerErrorSchema",
+    # OAuth callback
+    "OAuthCallbackRequestSchema",
+    "OAuthCallbackResponseSchema",
+    "OAuthCallbackBadRequestSchema",
+    "OAuthCallbackUnauthorizedSchema",
+    "OAuthCallbackUnprocessableEntitySchema",
+    "OAuthCallbackMethodNotAllowedSchema",
+    "OAuthCallbackInternalServerErrorSchema",
 )

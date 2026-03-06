@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field
 
 
-class OAuthLoginResponseSchema(BaseModel):
-    """Схема ответа на OAuth авторизацию."""
+class OAuthCallbackResponseSchema(BaseModel):
+    """Схема ответа на OAuth callback."""
 
     code: str = Field(default="OK", description="Код ответа")
     message: str = Field(..., description="Сообщение")

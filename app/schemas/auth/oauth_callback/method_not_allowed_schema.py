@@ -1,8 +1,8 @@
 from ...error_response_schema import ErrorResponseSchema
 
 
-class OAuthLoginMethodNotAllowedSchema(ErrorResponseSchema):
-    """Схема ошибки 405 Method Not Allowed для OAuth login endpoint."""
+class OAuthCallbackMethodNotAllowedSchema(ErrorResponseSchema):
+    """Схема ошибки 405 Method Not Allowed для OAuth callback endpoint."""
 
     class Config:
         json_schema_extra = {

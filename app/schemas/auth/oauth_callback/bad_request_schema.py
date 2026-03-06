@@ -6,8 +6,8 @@ from ...error_response_schema import ErrorCode, ErrorResponseSchema
 from ..auth_error_code import AuthErrorCode
 
 
-class OAuthLoginBadRequestSchema(ErrorResponseSchema):
-    """Схема ошибки 400 Bad Request для OAuth login endpoint."""
+class OAuthCallbackBadRequestSchema(ErrorResponseSchema):
+    """Схема ошибки 400 Bad Request для OAuth callback endpoint."""
 
     code: Union[ErrorCode, AuthErrorCode] = Field(..., description="Код ошибки")
 
