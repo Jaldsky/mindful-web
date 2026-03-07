@@ -5,6 +5,8 @@ from .use_cases.refresh import RefreshTokensService
 from .use_cases.resend_code import ResendVerificationCodeService
 from .use_cases.verify import VerifyEmailService
 from .use_cases.session import SessionService
+from .use_cases.oauth_authorize import OAuthAuthorizeService
+from .use_cases.oauth_callback import OAuthCallbackService
 
 __all__ = [
     "AnonymousService",
@@ -14,4 +16,6 @@ __all__ = [
     "ResendVerificationCodeService",
     "VerifyEmailService",
     "SessionService",
+    "OAuthAuthorizeService",
+    "OAuthCallbackService",
 ]
