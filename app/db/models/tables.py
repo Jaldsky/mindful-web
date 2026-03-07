@@ -52,6 +52,19 @@ class User(Base, CreatedMixin, UpdatedMixin, DeletedMixin):
         comment="Новый email для подтверждения",
     )
     password: Mapped[str | None] = Column(String(255), nullable=True, comment="Хэш пароля")
+    oauth_provider: Mapped[str | None] = Column(
+        String(50),
+        nullable=True,
+        index=True,
+        comment="Внешний OAuth провайдер",
+    )
+    oauth_provider_subject: Mapped[str | None] = Column(
+        String(255),
+        unique=True,
+        nullable=True,
+        index=True,
+        comment="Идентификатор пользователя у внешнего OAuth провайдера",
+    )
     is_verified: Mapped[bool] = Column(
         Boolean,
         nullable=False,
