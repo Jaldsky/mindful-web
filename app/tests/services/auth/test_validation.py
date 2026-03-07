@@ -1,10 +1,22 @@
 from unittest import TestCase
-from app.services.auth.constants import MAX_PASSWORD_LENGTH, MAX_USERNAME_LENGTH
+from app.services.auth.constants import (
+    MAX_OAUTH_CODE_LENGTH,
+    MAX_OAUTH_CODE_VERIFIER_LENGTH,
+    MAX_OAUTH_STATE_LENGTH,
+    MAX_PASSWORD_LENGTH,
+    MAX_USERNAME_LENGTH,
+    MIN_OAUTH_CODE_VERIFIER_LENGTH,
+)
 from app.services.auth.exceptions import (
     InvalidEmailFormatException,
+    InvalidOAuthCodeFormatException,
+    InvalidOAuthCodeVerifierFormatException,
+    InvalidOAuthRedirectUriFormatException,
+    InvalidOAuthStateFormatException,
     InvalidPasswordFormatException,
     InvalidUsernameFormatException,
     InvalidVerificationCodeFormatException,
+    OAuthRedirectUriMismatchException,
     TokenInvalidException,
 )
 from app.services.auth.validators import AuthServiceValidators
@@ -137,3 +149,146 @@ class TestAuthServiceValidators(TestCase):
             AuthServiceValidators.validate_jwt_token("some.jwt.token")
         except TokenInvalidException:
             self.fail("validate_jwt_token() raised TokenInvalidException unexpectedly!")
+
+    def test_validate_oauth_code_empty(self):
+        """Пустой OAuth code должен вызывать исключение."""
+        with self.assertRaises(InvalidOAuthCodeFormatException):
+            AuthServiceValidators.validate_oauth_code("")
+
+    def test_validate_oauth_code_too_long(self):
+        """OAuth code длиннее MAX_OAUTH_CODE_LENGTH должен вызывать исключение."""
+        long_code = "a" * (MAX_OAUTH_CODE_LENGTH + 1)
+        with self.assertRaises(InvalidOAuthCodeFormatException):
+            AuthServiceValidators.validate_oauth_code(long_code)
+
+    def test_validate_oauth_code_valid(self):
+        """Валидный OAuth code не должен вызывать исключение."""
+        try:
+            AuthServiceValidators.validate_oauth_code("4/0AbCdEfGhIjKlMnOpQr")
+        except InvalidOAuthCodeFormatException:
+            self.fail("validate_oauth_code() raised InvalidOAuthCodeFormatException unexpectedly!")
+
+    def test_validate_oauth_redirect_uri_invalid_scheme(self):
+        """Redirect URI с недопустимой схемой (не http/https) должен вызывать исключение."""
+        with self.assertRaises(InvalidOAuthRedirectUriFormatException):
+            AuthServiceValidators.validate_oauth_redirect_uri("ftp://example.com/callback")
+
+    def test_validate_oauth_redirect_uri_no_netloc(self):
+        """Redirect URI без netloc должен вызывать исключение."""
+        with self.assertRaises(InvalidOAuthRedirectUriFormatException):
+            AuthServiceValidators.validate_oauth_redirect_uri("https:///path")
+
+    def test_validate_oauth_redirect_uri_valid_http(self):
+        """Валидный HTTP redirect URI не должен вызывать исключение."""
+        try:
+            AuthServiceValidators.validate_oauth_redirect_uri("http://localhost:8000/oauth/callback")
+        except InvalidOAuthRedirectUriFormatException:
+            self.fail("validate_oauth_redirect_uri() raised InvalidOAuthRedirectUriFormatException unexpectedly!")
+
+    def test_validate_oauth_redirect_uri_valid_https(self):
+        """Валидный HTTPS redirect URI не должен вызывать исключение."""
+        try:
+            AuthServiceValidators.validate_oauth_redirect_uri("https://app.example.com/oauth/google/callback")
+        except InvalidOAuthRedirectUriFormatException:
+            self.fail("validate_oauth_redirect_uri() raised InvalidOAuthRedirectUriFormatException unexpectedly!")
+
+    def test_validate_oauth_redirect_uri_matches_none_expected_passes(self):
+        """Если expected_redirect_uri None или пустой, проверка не выполняется."""
+        try:
+            AuthServiceValidators.validate_oauth_redirect_uri_matches(None, "http://any.com/cb")
+            AuthServiceValidators.validate_oauth_redirect_uri_matches("", "http://any.com/cb")
+        except OAuthRedirectUriMismatchException:
+            self.fail("validate_oauth_redirect_uri_matches() raised OAuthRedirectUriMismatchException unexpectedly!")
+
+    def test_validate_oauth_redirect_uri_matches_same_passes(self):
+        """Если URI совпадают, исключение не выбрасывается."""
+        uri = "https://app.example.com/oauth/callback"
+        try:
+            AuthServiceValidators.validate_oauth_redirect_uri_matches(uri, uri)
+        except OAuthRedirectUriMismatchException:
+            self.fail("validate_oauth_redirect_uri_matches() raised OAuthRedirectUriMismatchException unexpectedly!")
+
+    def test_validate_oauth_redirect_uri_matches_different_raises(self):
+        """Если expected и фактический URI различаются, выбрасывается OAuthRedirectUriMismatchException."""
+        with self.assertRaises(OAuthRedirectUriMismatchException):
+            AuthServiceValidators.validate_oauth_redirect_uri_matches(
+                "https://app.example.com/callback",
+                "https://evil.com/callback",
+            )
+
+    def test_validate_oauth_code_verifier_none_passes(self):
+        """code_verifier=None допустим (PKCE опционален)."""
+        try:
+            AuthServiceValidators.validate_oauth_code_verifier(None)
+        except InvalidOAuthCodeVerifierFormatException:
+            self.fail("validate_oauth_code_verifier() raised unexpectedly for None!")
+
+    def test_validate_oauth_code_verifier_empty_raises(self):
+        """Пустая строка code_verifier должна вызывать исключение."""
+        with self.assertRaises(InvalidOAuthCodeVerifierFormatException):
+            AuthServiceValidators.validate_oauth_code_verifier("")
+
+    def test_validate_oauth_code_verifier_too_short_raises(self):
+        """code_verifier короче MIN_OAUTH_CODE_VERIFIER_LENGTH должен вызывать исключение."""
+        short = "a" * (MIN_OAUTH_CODE_VERIFIER_LENGTH - 1)
+        with self.assertRaises(InvalidOAuthCodeVerifierFormatException):
+            AuthServiceValidators.validate_oauth_code_verifier(short)
+
+    def test_validate_oauth_code_verifier_too_long_raises(self):
+        """code_verifier длиннее MAX_OAUTH_CODE_VERIFIER_LENGTH должен вызывать исключение."""
+        long_verifier = "a" * (MAX_OAUTH_CODE_VERIFIER_LENGTH + 1)
+        with self.assertRaises(InvalidOAuthCodeVerifierFormatException):
+            AuthServiceValidators.validate_oauth_code_verifier(long_verifier)
+
+    def test_validate_oauth_code_verifier_invalid_chars_raises(self):
+        """code_verifier с недопустимыми символами должен вызывать исключение."""
+        with self.assertRaises(InvalidOAuthCodeVerifierFormatException):
+            AuthServiceValidators.validate_oauth_code_verifier("a" * 43 + "!")
+
+    def test_validate_oauth_code_verifier_valid(self):
+        """Валидный code_verifier (длина и символы из разрешённого набора) не должен вызывать исключение."""
+        valid = "a" * MIN_OAUTH_CODE_VERIFIER_LENGTH
+        try:
+            AuthServiceValidators.validate_oauth_code_verifier(valid)
+        except InvalidOAuthCodeVerifierFormatException:
+            self.fail("validate_oauth_code_verifier() raised unexpectedly for valid verifier!")
+
+    def test_validate_oauth_code_verifier_valid_with_allowed_chars(self):
+        """code_verifier с буквами, цифрами и -._~ допустим."""
+        valid = "ABCDefgh1234-._~" + "x" * (MIN_OAUTH_CODE_VERIFIER_LENGTH - 16)
+        try:
+            AuthServiceValidators.validate_oauth_code_verifier(valid)
+        except InvalidOAuthCodeVerifierFormatException:
+            self.fail("validate_oauth_code_verifier() raised unexpectedly for allowed chars!")
+
+    def test_validate_oauth_state_none_passes(self):
+        """state=None допустим."""
+        try:
+            AuthServiceValidators.validate_oauth_state(None)
+        except InvalidOAuthStateFormatException:
+            self.fail("validate_oauth_state() raised unexpectedly for None!")
+
+    def test_validate_oauth_state_empty_raises(self):
+        """Пустая строка state должна вызывать исключение."""
+        with self.assertRaises(InvalidOAuthStateFormatException):
+            AuthServiceValidators.validate_oauth_state("")
+
+    def test_validate_oauth_state_too_long_raises(self):
+        """state длиннее MAX_OAUTH_STATE_LENGTH должен вызывать исключение."""
+        long_state = "a" * (MAX_OAUTH_STATE_LENGTH + 1)
+        with self.assertRaises(InvalidOAuthStateFormatException):
+            AuthServiceValidators.validate_oauth_state(long_state)
+
+    def test_validate_oauth_state_valid(self):
+        """Валидный state не должен вызывать исключение."""
+        try:
+            AuthServiceValidators.validate_oauth_state("random-state-value")
+        except InvalidOAuthStateFormatException:
+            self.fail("validate_oauth_state() raised unexpectedly for valid state!")
+
+    def test_validate_oauth_state_max_length_passes(self):
+        """state длины MAX_OAUTH_STATE_LENGTH допустим."""
+        try:
+            AuthServiceValidators.validate_oauth_state("a" * MAX_OAUTH_STATE_LENGTH)
+        except InvalidOAuthStateFormatException:
+            self.fail("validate_oauth_state() raised unexpectedly for max length state!")
