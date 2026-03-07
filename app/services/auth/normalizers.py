@@ -1,7 +1,9 @@
 from typing import Any
 
+import re
+
 from .types import Password, AccessToken, RefreshToken
-from .constants import AUTH_OAUTH_STATE_COOKIE_NAME
+from .constants import AUTH_OAUTH_STATE_COOKIE_NAME, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH
 from ..types import Email, Username
 from ..normalizers import normalize_email
 
@@ -146,3 +148,25 @@ class AuthServiceNormalizers:
         """
         if state is not None:
             return state.strip()
+
+    @staticmethod
+    def normalize_oauth_username(name: str) -> str:
+        """Метод нормализации сырой строки в базу для username.
+
+        Args:
+            name: Сырая строка.
+
+        Returns:
+            Нормализованная строка-база для username.
+        """
+        username = (name or "").strip().lower()
+        username = re.sub(r"[^a-z0-9_]+", "_", username)
+        username = re.sub(r"_+", "_", username).strip("_")
+
+        if not username:
+            username = "user"
+        if len(username) > MAX_USERNAME_LENGTH:
+            username = username[:MAX_USERNAME_LENGTH].strip("_")
+        if len(username) < MIN_USERNAME_LENGTH:
+            username = f"{username}{'0' * (MIN_USERNAME_LENGTH - len(username))}"
+        return username
