@@ -7,7 +7,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ....db.models.tables import User
-from ....integrations.google import GoogleOAuthApi
 from ....schemas.integrations.google import (
     GoogleOAuthTokenInfoResponseSchema,
     GoogleOAuthTokenResponseSchema,
@@ -134,13 +133,18 @@ class OAuthCallbackServiceBase:
 class OAuthCallbackService(OAuthCallbackServiceBase):
     """Сервис обработки OAuth callback."""
 
-    def __init__(self, oauth_client: GoogleOAuthApi | None = None) -> None:
+    def __init__(self, oauth_client: "GoogleOAuthApi | None" = None) -> None:
         """Инициализация сервиса OAuth callback.
 
         Args:
             oauth_client: Клиент OAuth API провайдера.
         """
-        self._oauth_client = oauth_client or GoogleOAuthApi()
+        if oauth_client is None:
+            from ....integrations.google import GoogleOAuthApi
+
+            self._oauth_client = GoogleOAuthApi()
+        else:
+            self._oauth_client = oauth_client
 
     async def _exchange_code_for_tokens(
         self,
