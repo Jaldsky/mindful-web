@@ -14,6 +14,7 @@ from ...config import (
     JWT_REFRESH_TOKEN_EXPIRE_DAYS,
     AUTH_COOKIE_DOMAIN,
     AUTH_COOKIE_SAMESITE,
+    OAUTH_STATE_COOKIE_EXPIRE_MINUTES,
 )
 
 
@@ -114,6 +115,51 @@ def clear_anon_cookie(response: Response) -> None:
 
     response.delete_cookie(
         key=AUTH_ANON_COOKIE_NAME,
+        domain=cookie_domain,
+        path=cookie_path,
+        secure=AUTH_COOKIE_SECURE,
+        httponly=AUTH_COOKIE_HTTPONLY,
+        samesite=samesite,
+    )
+
+
+def set_oauth_state_cookie(response: Response, cookie_key: str, state: str) -> None:
+    """Функция установки OAuth state в HTTP куки.
+
+    Args:
+        response: HTTP-ответ для установки куки.
+        cookie_key: Имя куки (например, oauth_state_google).
+        state: Значение state (CSRF token).
+    """
+    cookie_domain = AUTH_COOKIE_DOMAIN or None
+    cookie_path = AUTH_COOKIE_PATH or "/"
+    samesite = AUTH_COOKIE_SAMESITE
+
+    response.set_cookie(
+        key=cookie_key,
+        value=state,
+        max_age=OAUTH_STATE_COOKIE_EXPIRE_MINUTES * 60,
+        httponly=AUTH_COOKIE_HTTPONLY,
+        secure=AUTH_COOKIE_SECURE,
+        samesite=samesite,
+        domain=cookie_domain,
+        path=cookie_path,
+    )
+
+
+def clear_oauth_state_cookie(response: Response, cookie_key: str) -> None:
+    """Функция удаления OAuth state из HTTP куки.
+
+    Args:
+        response: HTTP-ответ для удаления куки.
+        cookie_key: Имя куки (например, oauth_state_google).
+    """
+    cookie_domain = AUTH_COOKIE_DOMAIN or None
+    cookie_path = AUTH_COOKIE_PATH or "/"
+    samesite = AUTH_COOKIE_SAMESITE
+
+    response.delete_cookie(
+        key=cookie_key,
         domain=cookie_domain,
         path=cookie_path,
         secure=AUTH_COOKIE_SECURE,
