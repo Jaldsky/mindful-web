@@ -74,7 +74,7 @@ def validate_usage_request_params(
 
 
 def get_oauth_provider_path(
-    provider: str = Path(..., description="Имя OAuth-провайдера"),
+    provider: str = Path(..., description="Имя OAuth-провайдера", example="google"),
 ) -> OAuthProviderPathSchema:
     """Функция извлечения {provider} из пути, нормализации и валидации.
 
