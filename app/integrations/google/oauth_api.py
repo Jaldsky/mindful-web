@@ -1,6 +1,12 @@
 from typing import Any, NoReturn
 
 from ...services.auth.config import OAuthProviderConfig
+from ...services.auth.types import (
+    OAuthAuthorizationCode,
+    OAuthCodeVerifier,
+    OAuthIdToken,
+    OAuthRedirectUri,
+)
 from ...core.request import AsyncRequestBase
 from ...schemas.integrations.google import (
     GoogleOAuthTokenRequestBodySchema,
@@ -33,9 +39,9 @@ class GoogleOAuthApi(GoogleOAuthApiBase):
     async def post_token(
         self,
         provider_config: OAuthProviderConfig,
-        code: str,
-        redirect_uri: str,
-        code_verifier: str | None,
+        code: OAuthAuthorizationCode,
+        redirect_uri: OAuthRedirectUri,
+        code_verifier: OAuthCodeVerifier | None,
     ) -> GoogleOAuthTokenResponseSchema | NoReturn:
         """Метод обмена authorization code на токены.
 
@@ -66,7 +72,7 @@ class GoogleOAuthApi(GoogleOAuthApiBase):
     async def get_tokeninfo(
         self,
         provider_config: OAuthProviderConfig,
-        id_token: str,
+        id_token: OAuthIdToken,
     ) -> GoogleOAuthTokenInfoResponseSchema | NoReturn:
         """Метод получения claims из id_token (GET tokeninfo).
 
