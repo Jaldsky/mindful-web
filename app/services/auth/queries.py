@@ -4,6 +4,7 @@ from sqlalchemy import and_, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..types import Email, UserId, VerificationCode, Username
+from .types import OAuthProviderName, OAuthProviderSubject
 from ...db.models.tables import User, VerificationCode as VerificationCodeModel
 
 
@@ -64,6 +65,44 @@ async def fetch_user_by_email_or_pending(session: AsyncSession, email: Email) ->
     return result.scalar_one_or_none()
 
 
+async def fetch_user_by_email_any_status(session: AsyncSession, email: Email) -> User | None:
+    """Функция получения пользователя по email в любом статусе (включая soft-deleted).
+
+    Args:
+        session: AsyncSession.
+        email: Email пользователя.
+
+    Returns:
+        Пользователь или None, если не найден.
+    """
+    result = await session.execute(select(User).where(User.email == email))
+    return result.scalar_one_or_none()
+
+
+async def fetch_user_by_oauth_provider_subject_any_status(
+    session: AsyncSession, provider: OAuthProviderName, provider_subject: OAuthProviderSubject
+) -> User | None:
+    """Функция получения пользователя по OAuth-провайдеру и subject в любом статусе.
+
+    Args:
+        session: AsyncSession.
+        provider: OAuth-провайдер.
+        provider_subject: Уникальный идентификатор пользователя у провайдера.
+
+    Returns:
+        Пользователь или None, если не найден.
+    """
+    result = await session.execute(
+        select(User).where(
+            and_(
+                User.oauth_provider == provider,
+                User.oauth_provider_subject == provider_subject,
+            )
+        )
+    )
+    return result.scalar_one_or_none()
+
+
 async def fetch_user_by_id(session: AsyncSession, user_id: UserId) -> User | None:
     """Функция получения пользователя по user_id.
 
@@ -90,6 +129,30 @@ async def fetch_user_by_username(session: AsyncSession, username: Username) -> U
     """
     result = await session.execute(select(User).where(and_(User.username == username, User.deleted_at.is_(None))))
     return result.scalar_one_or_none()
+
+
+async def fetch_taken_usernames_any_status(session: AsyncSession, usernames: list[Username]) -> set[Username]:
+    """Функция получения занятых username в любом статусе (включая soft-deleted).
+
+    Args:
+        session: AsyncSession.
+        usernames: Список username-кандидатов для проверки.
+
+    Returns:
+        Множество занятых username из переданного списка.
+    """
+    if not usernames:
+        return set()
+
+    result = await session.execute(
+        select(User.username).where(
+            and_(
+                User.username.is_not(None),
+                User.username.in_(usernames),
+            )
+        )
+    )
+    return {u for u in result.scalars().all() if u is not None}
 
 
 async def fetch_active_verification_code_row(
