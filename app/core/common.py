@@ -53,3 +53,24 @@ def read_text_file(file_path: str, encoding: str = "utf-8") -> str:
     """
     with open(file_path, "r", encoding=encoding) as f:
         return f.read()
+
+
+def path_matches(path: str, template: str) -> bool:
+    """Функция проверки совпадения path с шаблоном.
+
+    Сегменты шаблона в фигурных скобках ({name}) сопоставляются с любым сегментом path.
+
+    Args:
+        path: Путь запроса.
+        template: Шаблон с плейсхолдерами в фигурных скобках.
+
+    Returns:
+        True, если path совпадает с шаблоном.
+    """
+    path_parts = path.strip("/").split("/")
+    template_parts = template.strip("/").split("/")
+    if len(path_parts) != len(template_parts):
+        return False
+    return all(
+        p == t or (len(t) > 2 and t.startswith("{") and t.endswith("}")) for p, t in zip(path_parts, template_parts)
+    )
