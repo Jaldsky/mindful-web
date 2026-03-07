@@ -5,7 +5,6 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator
 
 from ....services.auth.normalizers import AuthServiceNormalizers
-from ....services.auth.validators import AuthServiceValidators
 
 
 class OAuthProviderPathSchema(BaseModel):
@@ -29,5 +28,7 @@ class OAuthProviderPathSchema(BaseModel):
         Raises:
             InvalidOAuthProviderFormatException: Если provider пустой (422).
         """
+        from ....services.auth.validators import AuthServiceValidators
+
         AuthServiceValidators.validate_oauth_provider(v)
         return v
