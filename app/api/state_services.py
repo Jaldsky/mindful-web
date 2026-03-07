@@ -8,7 +8,7 @@ def get_database_healthcheck_service(request: Request):
         request: HTTP-запрос.
 
     Returns:
-        Экземпляр DatabaseHealthcheckService.К
+        Экземпляр DatabaseHealthcheckService.
     """
     return request.app.state.database_healthcheck_service
 
@@ -71,6 +71,30 @@ def get_login_service(request: Request):
         Экземпляр LoginService.
     """
     return request.app.state.login_service
+
+
+def get_oauth_callback_service(request: Request):
+    """Возвращает сервис обработки OAuth callback.
+
+    Args:
+        request: HTTP-запрос.
+
+    Returns:
+        Экземпляр OAuthCallbackService.
+    """
+    return request.app.state.oauth_callback_service
+
+
+def get_oauth_authorize_service(request: Request):
+    """Возвращает сервис OAuth authorize (редирект к провайдеру).
+
+    Args:
+        request: HTTP-запрос.
+
+    Returns:
+        Экземпляр OAuthAuthorizeService.
+    """
+    return request.app.state.oauth_authorize_service
 
 
 def get_refresh_tokens_service(request: Request):

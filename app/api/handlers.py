@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from ..core.localizer import localize_key
+from ..core.common import path_matches
 from ..exceptions import AppException
 from .routes import (
     ANALYTICS_USAGE_PATH,
@@ -19,6 +20,8 @@ from .routes import (
     AUTH_LOGOUT_PATH,
     AUTH_ANONYMOUS_PATH,
     AUTH_SESSION_PATH,
+    AUTH_OAUTH_CALLBACK_PATH,
+    AUTH_OAUTH_AUTHORIZE_PATH,
     USER_PROFILE_PATH,
     USER_PROFILE_USERNAME_PATH,
     USER_PROFILE_EMAIL_PATH,
@@ -157,6 +160,8 @@ async def method_not_allowed_handler(request: Request, exc: Exception) -> JSONRe
         auth_verify_method_not_allowed_response,
         auth_anonymous_method_not_allowed_response,
         auth_session_method_not_allowed_response,
+        auth_oauth_callback_method_not_allowed_response,
+        auth_oauth_authorize_method_not_allowed_response,
     )
     from ..services.user.http_handler import (
         user_profile_method_not_allowed_response,
@@ -197,6 +202,12 @@ async def method_not_allowed_handler(request: Request, exc: Exception) -> JSONRe
     if str(request.url.path) == AUTH_SESSION_PATH:
         return auth_session_method_not_allowed_response(request)
 
+    if path_matches(str(request.url.path), AUTH_OAUTH_CALLBACK_PATH):
+        return auth_oauth_callback_method_not_allowed_response(request)
+
+    if path_matches(str(request.url.path), AUTH_OAUTH_AUTHORIZE_PATH):
+        return auth_oauth_authorize_method_not_allowed_response(request)
+
     if str(request.url.path) == USER_PROFILE_PATH:
         return user_profile_method_not_allowed_response(request)
 
@@ -235,7 +246,7 @@ async def unprocessable_entity_handler(request: Request, exc: Exception) -> JSON
         if isinstance(exc.detail, str) and exc.detail:
             message_key = exc.detail
         elif isinstance(exc.detail, dict):
-            logger.warning("Unprocessable entity (dict detail): %s", exc.detail)
+            logger.warning(f"Unprocessable entity (dict detail): {exc.detail}")
 
     fallback = (
         _UNPROCESSABLE_ENTITY_DEFAULT_FALLBACK if message_key == _UNPROCESSABLE_ENTITY_DEFAULT_KEY else message_key

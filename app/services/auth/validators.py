@@ -18,6 +18,7 @@ from .exceptions import (
     InvalidEmailFormatException,
     InvalidOAuthCodeFormatException,
     InvalidOAuthCodeVerifierFormatException,
+    InvalidOAuthProviderFormatException,
     InvalidOAuthRedirectUriFormatException,
     InvalidOAuthStateFormatException,
     InvalidPasswordFormatException,
@@ -229,6 +230,22 @@ class AuthServiceValidators:
             raise InvalidOAuthCodeVerifierFormatException(
                 key="auth.errors.oauth_code_verifier_format_invalid",
                 fallback="OAuth code_verifier contains invalid characters",
+            )
+
+    @classmethod
+    def validate_oauth_provider(cls, provider: str) -> None | NoReturn:
+        """Метод валидации OAuth provider.
+
+        Args:
+            provider: Имя OAuth-провайдера.
+
+        Raises:
+            InvalidOAuthProviderFormatException: Если provider пустой после нормализации.
+        """
+        if not provider:
+            raise InvalidOAuthProviderFormatException(
+                key="auth.errors.oauth_provider_format_invalid",
+                fallback="OAuth provider cannot be empty",
             )
 
     @classmethod

@@ -8,10 +8,12 @@ from ..services.healthcheck import DatabaseHealthcheckService
 from ..services.auth import (
     AnonymousService,
     LoginService,
+    OAuthAuthorizeService,
     RefreshTokensService,
     RegisterService,
     ResendVerificationCodeService,
     SessionService,
+    OAuthCallbackService,
     VerifyEmailService,
 )
 from ..services.email import EmailService
@@ -37,6 +39,8 @@ async def lifespan(app: FastAPI):
     app.state.anonymous_service = AnonymousService()  # type: ignore[attr-defined]
     app.state.register_service = RegisterService()  # type: ignore[attr-defined]
     app.state.login_service = LoginService()  # type: ignore[attr-defined]
+    app.state.oauth_authorize_service = OAuthAuthorizeService()  # type: ignore[attr-defined]
+    app.state.oauth_callback_service = OAuthCallbackService()  # type: ignore[attr-defined]
     app.state.refresh_tokens_service = RefreshTokensService()  # type: ignore[attr-defined]
     app.state.resend_verification_code_service = ResendVerificationCodeService()  # type: ignore[attr-defined]
     app.state.verify_email_service = VerifyEmailService()  # type: ignore[attr-defined]
