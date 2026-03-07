@@ -108,4 +108,4 @@ class EmailService:
             sender=normalized_sender,
             recipient=normalized_to,
         )
-        logger.info("Verification email sent to %s", normalized_to)
+        logger.info(f"Verification email sent to {normalized_to}")

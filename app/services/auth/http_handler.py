@@ -11,6 +11,8 @@ from ...schemas.auth import (
     VerifyMethodNotAllowedSchema,
     AnonymousMethodNotAllowedSchema,
     SessionMethodNotAllowedSchema,
+    OAuthCallbackMethodNotAllowedSchema,
+    OAuthAuthorizeMethodNotAllowedSchema,
 )
 
 
@@ -84,3 +86,21 @@ def auth_session_method_not_allowed_response(request: Request) -> JSONResponse:
         JSONResponse с ошибкой 405 Method Not Allowed.
     """
     return method_not_allowed_response(request, SessionMethodNotAllowedSchema, allowed_method="GET")
+
+
+def auth_oauth_callback_method_not_allowed_response(request: Request) -> JSONResponse:
+    """Функция возврата ответа 405 Method Not Allowed для POST /auth/oauth/{provider}/callback.
+
+    Returns:
+        JSONResponse с ошибкой 405 Method Not Allowed.
+    """
+    return method_not_allowed_response(request, OAuthCallbackMethodNotAllowedSchema, allowed_method="POST")
+
+
+def auth_oauth_authorize_method_not_allowed_response(request: Request) -> JSONResponse:
+    """Функция возврата ответа 405 Method Not Allowed для GET /auth/oauth/{provider}/authorize.
+
+    Returns:
+        JSONResponse с ошибкой 405 Method Not Allowed.
+    """
+    return method_not_allowed_response(request, OAuthAuthorizeMethodNotAllowedSchema, allowed_method="GET")

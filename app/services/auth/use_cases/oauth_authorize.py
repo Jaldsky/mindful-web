@@ -7,7 +7,7 @@ from ..constants import OAUTH_STATE_TOKEN_BYTES
 from ..exceptions import OAuthProviderUnsupportedException
 from ..normalizers import AuthServiceNormalizers
 from ..types import OAuthProviderName, OAuthState
-from ....schemas.auth.oauth_authorize import OAuthAuthorizeQueryParamsSchema
+from ....schemas.auth.oauth.authorize import OAuthAuthorizeQueryParamsSchema
 
 
 class OAuthAuthorizeServiceBase:

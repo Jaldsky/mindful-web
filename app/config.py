@@ -13,7 +13,7 @@ SUPPORTED_LOCALES: tuple[str, ...] = ("en", "ru")
 
 DEFAULT_PAGE_SIZE: int = 20
 
-CORS_ALLOW_ORIGINS: list[str] = os.getenv("CORS_ALLOW_ORIGINS").split(",")
+CORS_ALLOW_ORIGINS: list[str] = [x.strip() for x in (os.getenv("CORS_ALLOW_ORIGINS") or "").split(",") if x.strip()]
 
 # Database
 POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "mwb-db")
@@ -67,3 +67,4 @@ AUTH_COOKIE_SECURE: bool = os.getenv("AUTH_COOKIE_SECURE", "false").lower() == "
 AUTH_COOKIE_HTTPONLY: bool = os.getenv("AUTH_COOKIE_HTTPONLY", "true").lower() == "true"
 AUTH_COOKIE_DOMAIN: str = os.getenv("AUTH_COOKIE_DOMAIN", "")
 AUTH_COOKIE_SAMESITE: str = os.getenv("AUTH_COOKIE_SAMESITE", "lax").lower()
+OAUTH_STATE_COOKIE_EXPIRE_MINUTES: int = int(os.getenv("OAUTH_STATE_COOKIE_EXPIRE_MINUTES", "10"))

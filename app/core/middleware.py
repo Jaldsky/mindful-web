@@ -7,8 +7,6 @@ from ..config import ACCEPT_LANGUAGE_HEADER, DEFAULT_LOCALE
 
 logger = logging.getLogger(__name__)
 
-_REQUEST_LOG_FORMAT = "Method: {method} | URL: {url} | Duration: {duration:.5f}s"
-
 
 async def locale_middleware(
     request: Request,
@@ -64,11 +62,11 @@ async def log_requests_middleware(request: Request, call_next):
     try:
         response: Response = await call_next(request)
         process_time = time.time() - start_time
-        log_message = _REQUEST_LOG_FORMAT.format(method=request.method, url=request.url, duration=process_time)
+        log_message = f"Method: {request.method} | URL: {request.url} | Duration: {process_time:.5f}s"
         logger.info(f"Response: {response.status_code} | {log_message}")
         return response
     except Exception as e:
         process_time = time.time() - start_time
-        log_message = _REQUEST_LOG_FORMAT.format(method=request.method, url=request.url, duration=process_time)
+        log_message = f"Method: {request.method} | URL: {request.url} | Duration: {process_time:.5f}s"
         logger.error(f"Error: {e} | {log_message}")
         raise

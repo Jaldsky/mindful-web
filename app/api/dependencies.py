@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Annotated
 from uuid import UUID
-from fastapi import Depends, Header, Query, Request
+from fastapi import Depends, Header, Path, Query, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from ..config import ACCEPT_LANGUAGE_HEADER
@@ -10,6 +10,7 @@ from ..schemas.accept_language_header_schema import AcceptLanguageHeaderSchema
 from ..db.types import DatabaseSession
 from ..db.models.tables import User
 from ..schemas.analytics import AnalyticsUsageRequestSchema
+from ..schemas.auth import OAuthProviderPathSchema
 from ..services.auth.exceptions import TokenMissingException, TokenInvalidException
 from ..services.auth.access import authenticate_access_token, extract_user_id_from_access_token
 from ..services.auth.common import decode_token
@@ -70,6 +71,24 @@ def validate_usage_request_params(
         to_date=to_date,
         page=page,
     )
+
+
+def get_oauth_provider_path(
+    provider: str = Path(..., description="Имя OAuth-провайдера"),
+) -> OAuthProviderPathSchema:
+    """Функция извлечения {provider} из пути, нормализации и валидации.
+
+    Args:
+        provider: Имя OAuth-провайдера из path.
+
+    Returns:
+        OAuthProviderPathSchema с нормализованным полем provider.
+
+    Raises:
+        InvalidOAuthProviderFormatException: Если provider пустой после нормализации (422).
+        ValidationError: Если provider не строка (422).
+    """
+    return OAuthProviderPathSchema(provider=provider)
 
 
 def _extract_access_token(

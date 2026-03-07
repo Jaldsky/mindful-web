@@ -158,6 +158,12 @@ class InvalidOAuthCodeVerifierFormatException(UnprocessableEntityException):
     error_code = AuthErrorCode.INVALID_OAUTH_CODE_VERIFIER_FORMAT
 
 
+class InvalidOAuthProviderFormatException(UnprocessableEntityException):
+    """Неверный формат OAuth provider (path-параметр) (422)."""
+
+    error_code = AuthErrorCode.INVALID_OAUTH_PROVIDER_FORMAT
+
+
 class VerificationCodeExpiredException(UnprocessableEntityException):
     """Код подтверждения истёк (422)."""
 

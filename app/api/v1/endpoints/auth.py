@@ -1,13 +1,16 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Request, Response
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from ...dependencies import get_db_session
+from ...dependencies import get_db_session, get_oauth_provider_path
 from ...state_services import (
     get_anonymous_service,
     get_login_service,
+    get_oauth_authorize_service,
+    get_oauth_callback_service,
     get_register_service,
     get_resend_verification_code_service,
     get_session_service,
@@ -39,6 +42,18 @@ from ....schemas.auth import (
     LoginForbiddenSchema,
     LoginMethodNotAllowedSchema,
     LoginInternalServerErrorSchema,
+    # OAuth
+    OAuthCallbackRequestSchema,
+    OAuthCallbackResponseSchema,
+    OAuthCallbackBadRequestSchema,
+    OAuthCallbackUnauthorizedSchema,
+    OAuthCallbackUnprocessableEntitySchema,
+    OAuthCallbackMethodNotAllowedSchema,
+    OAuthCallbackInternalServerErrorSchema,
+    OAuthAuthorizeMethodNotAllowedSchema,
+    OAuthAuthorizeInternalServerErrorSchema,
+    OAuthAuthorizeBadRequestSchema,
+    OAuthProviderPathSchema,
     # Refresh
     RefreshRequestSchema,
     RefreshResponseSchema,
@@ -73,9 +88,15 @@ from ....services.auth.cookies import (
     clear_auth_cookies,
     set_anon_cookie,
     clear_anon_cookie,
+    set_oauth_state_cookie,
+    clear_oauth_state_cookie,
 )
-from ....services.auth.exceptions import TokenMissingException
-from ....services.auth.constants import AUTH_ACCESS_COOKIE_NAME, AUTH_REFRESH_COOKIE_NAME, AUTH_ANON_COOKIE_NAME
+from ....services.auth.exceptions import TokenMissingException, OAuthStateInvalidException
+from ....services.auth.constants import (
+    AUTH_ACCESS_COOKIE_NAME,
+    AUTH_REFRESH_COOKIE_NAME,
+    AUTH_ANON_COOKIE_NAME,
+)
 from ....services.auth.common import decode_token
 from ....core.localizer import localize_key
 
@@ -558,6 +579,148 @@ async def login(
 
     message = localize_key(request, "auth.messages.login_successful", "Login successful")
     return LoginResponseSchema(
+        message=message,
+        access_token=access_token,
+        refresh_token=refresh_token,
+    )
+
+
+@router.get(
+    "/oauth/{provider}/authorize",
+    status_code=status.HTTP_302_FOUND,
+    responses={
+        status.HTTP_302_FOUND: {"description": "Редирект на страницу авторизации OAuth провайдера"},
+        status.HTTP_400_BAD_REQUEST: {
+            "model": OAuthAuthorizeBadRequestSchema,
+            "description": "Неподдерживаемый OAuth провайдер",
+        },
+        status.HTTP_405_METHOD_NOT_ALLOWED: {
+            "model": OAuthAuthorizeMethodNotAllowedSchema,
+            "description": "Поддерживается только GET метод",
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "model": OAuthAuthorizeInternalServerErrorSchema,
+            "description": "Внутренняя ошибка сервера",
+        },
+        status.HTTP_503_SERVICE_UNAVAILABLE: {
+            "model": ServiceUnavailableSchema,
+            "description": "Сервис не доступен",
+        },
+    },
+    summary="OAuth авторизация",
+    description="Генерирует state, сохраняет его в cookie и редиректит на страницу авторизации провайдера.",
+)
+async def oauth_authorize(
+    oauth_provider: OAuthProviderPathSchema = Depends(get_oauth_provider_path),
+    oauth_authorize_service=Depends(get_oauth_authorize_service),
+) -> RedirectResponse:
+    """Генерирует state, сохраняет его в cookie и редиректит на страницу авторизации OAuth-провайдера.
+
+    Args:
+        oauth_provider: Path-параметр provider.
+        oauth_authorize_service: Сервис формирования authorization URL и state.
+
+    Returns:
+        RedirectResponse с редиректом на страницу провайдера и Set-Cookie для state.
+
+    Raises:
+        OAuthProviderUnsupportedException: Провайдер не поддерживается (400).
+    """
+    provider = oauth_provider.provider
+    auth_url, state = oauth_authorize_service.exec(provider)
+    response = RedirectResponse(url=auth_url, status_code=status.HTTP_302_FOUND)
+    set_oauth_state_cookie(response, provider, state)
+    return response
+
+
+@router.post(
+    "/oauth/{provider}/callback",
+    response_model=OAuthCallbackResponseSchema,
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {
+            "model": OAuthCallbackResponseSchema,
+            "description": "Успешная OAuth авторизация",
+        },
+        status.HTTP_400_BAD_REQUEST: {
+            "model": OAuthCallbackBadRequestSchema,
+            "description": "Ошибка первичной валидации запроса",
+        },
+        status.HTTP_401_UNAUTHORIZED: {
+            "model": OAuthCallbackUnauthorizedSchema,
+            "description": "Неверный OAuth code или токен провайдера",
+        },
+        status.HTTP_405_METHOD_NOT_ALLOWED: {
+            "model": OAuthCallbackMethodNotAllowedSchema,
+            "description": "Поддерживается только POST метод",
+        },
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+            "model": OAuthCallbackUnprocessableEntitySchema,
+            "description": "Email отсутствует или не подтверждён у OAuth провайдера",
+        },
+        status.HTTP_500_INTERNAL_SERVER_ERROR: {
+            "model": OAuthCallbackInternalServerErrorSchema,
+            "description": "Внутренняя ошибка сервера",
+        },
+        status.HTTP_503_SERVICE_UNAVAILABLE: {
+            "model": ServiceUnavailableSchema,
+            "description": "Сервис не доступен",
+        },
+    },
+    summary="OAuth авторизация пользователя",
+    description="Авторизует пользователя по authorization code внешнего OAuth провайдера.",
+)
+async def oauth_callback(
+    request: Request,
+    response: Response,
+    oauth_provider: OAuthProviderPathSchema = Depends(get_oauth_provider_path),
+    payload: OAuthCallbackRequestSchema = Body(..., description="Данные OAuth callback"),
+    db: AsyncSession = Depends(get_db_session),
+    oauth_callback_service=Depends(get_oauth_callback_service),
+) -> OAuthCallbackResponseSchema:
+    """Обрабатывает OAuth callback: обмен кода на токены и выдача локальных access/refresh токенов.
+
+    Args:
+        oauth_provider: Path-параметр provider.
+        request: HTTP-запрос (cookies для проверки state).
+        response: HTTP-ответ (установка/удаление cookies).
+        payload: code, redirect_uri, опционально code_verifier и state.
+        db: Сессия БД.
+        oauth_callback_service: Сервис обработки OAuth callback.
+
+    Returns:
+        OAuthCallbackResponseSchema с access_token и refresh_token.
+
+    Raises:
+        OAuthStateInvalidException: State не совпадает с сохранённым в cookie (401).
+        OAuthProviderUnsupportedException: Провайдер не поддерживается (400).
+        OAuthRedirectUriMismatchException: redirect_uri не совпадает с конфигом (400).
+        OAuthCodeExchangeFailedException: Ошибка обмена кода на токены (401).
+        OAuthEmailMissingException, OAuthEmailNotVerifiedException: Проблемы с email от провайдера (422).
+        AuthServiceException: Внутренняя ошибка сервиса (500).
+    """
+    provider = oauth_provider.provider
+    expected_state = request.cookies.get(provider)
+    if expected_state is not None and payload.state != expected_state:
+        raise OAuthStateInvalidException(
+            key="auth.errors.oauth_state_invalid",
+            fallback="OAuth state is invalid",
+        )
+
+    _, access_token, refresh_token = await oauth_callback_service.exec(
+        session=db,
+        provider=provider,
+        code=payload.code,
+        redirect_uri=payload.redirect_uri,
+        code_verifier=payload.code_verifier,
+    )
+
+    clear_anon_cookie(response)
+    set_auth_cookies(response, access_token, refresh_token)
+    clear_oauth_state_cookie(response, provider)
+
+    message = localize_key(request, "auth.messages.login_successful", "Login successful")
+    return OAuthCallbackResponseSchema(
         message=message,
         access_token=access_token,
         refresh_token=refresh_token,

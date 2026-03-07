@@ -15,6 +15,10 @@ AUTH_RESEND_CODE_PATH = f"{AUTH_PATH}/resend-code"
 AUTH_LOGOUT_PATH = f"{AUTH_PATH}/logout"
 AUTH_ANONYMOUS_PATH = f"{AUTH_PATH}/anonymous"
 AUTH_SESSION_PATH = f"{AUTH_PATH}/session"
+# Oauth
+AUTH_OAUTH_PATH = f"{AUTH_PATH}/oauth"
+AUTH_OAUTH_CALLBACK_PATH = f"{AUTH_OAUTH_PATH}/{{provider}}/callback"
+AUTH_OAUTH_AUTHORIZE_PATH = f"{AUTH_OAUTH_PATH}/{{provider}}/authorize"
 
 # User
 USER_PATH = f"{API_V1_PREFIX}/user"
