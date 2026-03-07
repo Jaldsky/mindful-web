@@ -15,3 +15,4 @@ OAuthRedirectUri: TypeAlias = str
 OAuthCodeVerifier: TypeAlias = str
 OAuthIdToken: TypeAlias = str
 OAuthProviderSubject: TypeAlias = str
+OAuthState: TypeAlias = str
