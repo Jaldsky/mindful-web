@@ -2,8 +2,8 @@ from typing import Union
 
 from pydantic import Field
 
-from ...error_response_schema import ErrorCode, ErrorResponseSchema
-from ..auth_error_code import AuthErrorCode
+from ....error_response_schema import ErrorCode, ErrorResponseSchema
+from ...auth_error_code import AuthErrorCode
 
 
 class OAuthAuthorizeBadRequestSchema(ErrorResponseSchema):

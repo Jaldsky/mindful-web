@@ -2,9 +2,9 @@ from typing import Union
 
 from pydantic import Field
 
-from ...error_response_schema import ErrorCode
-from ...general import InternalServerErrorSchema
-from ..auth_error_code import AuthErrorCode
+from ....error_response_schema import ErrorCode
+from ....general import InternalServerErrorSchema
+from ...auth_error_code import AuthErrorCode
 
 
 class OAuthCallbackInternalServerErrorSchema(InternalServerErrorSchema):

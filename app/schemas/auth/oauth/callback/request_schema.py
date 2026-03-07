@@ -17,14 +17,14 @@ class OAuthCallbackRequestSchema(BaseModel):
     def normalize_code(cls, v: Any) -> Any:
         if not isinstance(v, str):
             return v
-        from ....services.auth.normalizers import AuthServiceNormalizers
+        from .....services.auth.normalizers import AuthServiceNormalizers
 
         return AuthServiceNormalizers.normalize_oauth_code(v)
 
     @field_validator("code")
     @classmethod
     def validate_code(cls, v: str) -> str:
-        from ....services.auth.validators import AuthServiceValidators
+        from .....services.auth.validators import AuthServiceValidators
 
         AuthServiceValidators.validate_oauth_code(v)
         return v
@@ -34,14 +34,14 @@ class OAuthCallbackRequestSchema(BaseModel):
     def normalize_redirect_uri(cls, v: Any) -> Any:
         if not isinstance(v, str):
             return v
-        from ....services.auth.normalizers import AuthServiceNormalizers
+        from .....services.auth.normalizers import AuthServiceNormalizers
 
         return AuthServiceNormalizers.normalize_oauth_redirect_uri(v)
 
     @field_validator("redirect_uri")
     @classmethod
     def validate_redirect_uri(cls, v: str) -> str:
-        from ....services.auth.validators import AuthServiceValidators
+        from .....services.auth.validators import AuthServiceValidators
 
         AuthServiceValidators.validate_oauth_redirect_uri(v)
         return v
@@ -53,14 +53,14 @@ class OAuthCallbackRequestSchema(BaseModel):
             return None
         if not isinstance(v, str):
             return v
-        from ....services.auth.normalizers import AuthServiceNormalizers
+        from .....services.auth.normalizers import AuthServiceNormalizers
 
         return AuthServiceNormalizers.normalize_oauth_code_verifier(v)
 
     @field_validator("code_verifier")
     @classmethod
     def validate_code_verifier(cls, v: str | None) -> str | None:
-        from ....services.auth.validators import AuthServiceValidators
+        from .....services.auth.validators import AuthServiceValidators
 
         AuthServiceValidators.validate_oauth_code_verifier(v)
         return v
@@ -72,14 +72,14 @@ class OAuthCallbackRequestSchema(BaseModel):
             return None
         if not isinstance(v, str):
             return v
-        from ....services.auth.normalizers import AuthServiceNormalizers
+        from .....services.auth.normalizers import AuthServiceNormalizers
 
         return AuthServiceNormalizers.normalize_oauth_state(v)
 
     @field_validator("state")
     @classmethod
     def validate_state(cls, v: str | None) -> str | None:
-        from ....services.auth.validators import AuthServiceValidators
+        from .....services.auth.validators import AuthServiceValidators
 
         AuthServiceValidators.validate_oauth_state(v)
         return v

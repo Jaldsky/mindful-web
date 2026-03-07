@@ -1,14 +1,14 @@
-from ...error_response_schema import ErrorResponseSchema
+from ....error_response_schema import ErrorResponseSchema
 
 
-class OAuthAuthorizeMethodNotAllowedSchema(ErrorResponseSchema):
-    """Схема ошибки 405 Method Not Allowed для OAuth authorize endpoint."""
+class OAuthCallbackMethodNotAllowedSchema(ErrorResponseSchema):
+    """Схема ошибки 405 Method Not Allowed для OAuth callback endpoint."""
 
     class Config:
         json_schema_extra = {
             "example": {
                 "code": "METHOD_NOT_ALLOWED",
-                "message": "Method not allowed. Only GET method is supported for this endpoint.",
+                "message": "Method not allowed. Only POST method is supported for this endpoint.",
                 "details": None,
                 "meta": {
                     "request_id": "aaa5c2b3-1a1b-4612-8ad9-e9e731ea82c0",
