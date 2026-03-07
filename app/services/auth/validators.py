@@ -24,6 +24,7 @@ from .exceptions import (
     TokenInvalidException,
     InvalidUsernameFormatException,
     InvalidVerificationCodeFormatException,
+    OAuthRedirectUriMismatchException,
 )
 from .types import Password, RefreshToken, AccessToken
 from ..types import Email, VerificationCode, Username
@@ -176,6 +177,29 @@ class AuthServiceValidators:
             raise InvalidOAuthRedirectUriFormatException(
                 key="auth.errors.oauth_redirect_uri_format_invalid",
                 fallback="OAuth redirect URI format is invalid",
+            )
+
+    @classmethod
+    def validate_oauth_redirect_uri_matches(
+        cls,
+        expected_redirect_uri: str | None,
+        redirect_uri: str,
+    ) -> None | NoReturn:
+        """Метод проверки совпадения OAuth redirect_uri с ожидаемым для провайдера.
+
+        Args:
+            expected_redirect_uri: Ожидаемый redirect_uri из конфига провайдера.
+            redirect_uri: Фактический redirect_uri из запроса.
+
+        Raises:
+            OAuthRedirectUriMismatchException: Если ожидаемый задан и не совпадает с фактическим.
+        """
+        if not expected_redirect_uri:
+            return
+        if redirect_uri != expected_redirect_uri:
+            raise OAuthRedirectUriMismatchException(
+                key="auth.errors.oauth_redirect_uri_mismatch",
+                fallback="OAuth redirect URI mismatch",
             )
 
     @classmethod
