@@ -67,6 +67,12 @@ from .oauth_callback import (
     OAuthCallbackMethodNotAllowedSchema,
     OAuthCallbackInternalServerErrorSchema,
 )
+from .oauth_authorize import (
+    OAuthAuthorizeQueryParamsSchema,
+    OAuthAuthorizeMethodNotAllowedSchema,
+    OAuthAuthorizeInternalServerErrorSchema,
+    OAuthAuthorizeBadRequestSchema,
+)
 
 __all__ = (
     # Common
@@ -130,4 +136,9 @@ __all__ = (
     "OAuthCallbackUnprocessableEntitySchema",
     "OAuthCallbackMethodNotAllowedSchema",
     "OAuthCallbackInternalServerErrorSchema",
+    # OAuth authorize
+    "OAuthAuthorizeQueryParamsSchema",
+    "OAuthAuthorizeMethodNotAllowedSchema",
+    "OAuthAuthorizeInternalServerErrorSchema",
+    "OAuthAuthorizeBadRequestSchema",
 )
