@@ -58,7 +58,7 @@ from .session import (
     SessionMethodNotAllowedSchema,
     SessionInternalServerErrorSchema,
 )
-from .oauth_callback import (
+from .oauth import (
     OAuthCallbackRequestSchema,
     OAuthCallbackResponseSchema,
     OAuthCallbackBadRequestSchema,
@@ -66,12 +66,11 @@ from .oauth_callback import (
     OAuthCallbackUnprocessableEntitySchema,
     OAuthCallbackMethodNotAllowedSchema,
     OAuthCallbackInternalServerErrorSchema,
-)
-from .oauth_authorize import (
     OAuthAuthorizeQueryParamsSchema,
     OAuthAuthorizeMethodNotAllowedSchema,
     OAuthAuthorizeInternalServerErrorSchema,
     OAuthAuthorizeBadRequestSchema,
+    OAuthProviderPathSchema,
 )
 
 __all__ = (
@@ -141,4 +140,5 @@ __all__ = (
     "OAuthAuthorizeMethodNotAllowedSchema",
     "OAuthAuthorizeInternalServerErrorSchema",
     "OAuthAuthorizeBadRequestSchema",
+    "OAuthProviderPathSchema",
 )
