@@ -37,6 +37,18 @@ def get_analytics_usage_service(request: Request):
     return request.app.state.analytics_usage_service
 
 
+def get_analytics_summary_service(request: Request):
+    """Возвращает сервис summary аналитики использования по доменам.
+
+    Args:
+        request: HTTP-запрос.
+
+    Returns:
+        Экземпляр AnalyticsSummaryService.
+    """
+    return request.app.state.analytics_summary_service
+
+
 def get_anonymous_service(request: Request):
     """Возвращает сервис создания анонимной сессии.
 

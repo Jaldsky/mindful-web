@@ -87,6 +87,7 @@
     },
     "messages": {
       "usage_computed": "Usage analytics computed",
+      "summary_computed": "Usage analytics summary computed",
       "task_accepted": "Task accepted",
       "task_timeout": "Task accepted. Analytics is being computed (task {task_id})."
     }

@@ -9,7 +9,7 @@ from ..db.session.provider import Provider
 from ..schemas.accept_language_header_schema import AcceptLanguageHeaderSchema
 from ..db.types import DatabaseSession
 from ..db.models.tables import User
-from ..schemas.analytics import AnalyticsUsageRequestSchema
+from ..schemas.analytics import AnalyticsUsageRequestSchema, AnalyticsSummaryRequestSchema
 from ..schemas.auth import OAuthProviderPathSchema
 from ..services.auth.exceptions import TokenMissingException, TokenInvalidException
 from ..services.auth.access import authenticate_access_token, extract_user_id_from_access_token
@@ -70,6 +70,23 @@ def validate_usage_request_params(
         from_date=from_date,
         to_date=to_date,
         page=page,
+    )
+
+
+def validate_summary_request_params(
+    from_date: Annotated[
+        str,
+        Query(alias="from", description="Начало интервала (дата в формате DD-MM-YYYY)", example="05-04-2025"),
+    ],
+    to_date: Annotated[
+        str,
+        Query(alias="to", description="Конец интервала (дата в формате DD-MM-YYYY)", example="05-04-2025"),
+    ],
+) -> AnalyticsSummaryRequestSchema:
+    """Dependency для валидации параметров запроса analytics summary."""
+    return AnalyticsSummaryRequestSchema(
+        from_date=from_date,
+        to_date=to_date,
     )
 
 
