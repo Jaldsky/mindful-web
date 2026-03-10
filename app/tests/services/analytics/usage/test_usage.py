@@ -30,7 +30,7 @@ class TestUsageService(TestCase):
         return asyncio.run(coro)
 
     @patch("app.services.analytics.jobs.compute_domain_usage.logger")
-    @patch("app.services.analytics.common.load_compute_domain_usage_sql")
+    @patch("app.services.analytics.common.load_sql")
     @patch("app.services.analytics.queries.isinstance")
     def test_exec_success(self, mock_isinstance, mock_load_sql, mock_logger):
         """Успешное выполнение запроса аналитики на моках."""
@@ -64,7 +64,7 @@ class TestUsageService(TestCase):
         mock_logger.info.assert_called_with(f"Successfully computed usage analytics for user {self.user_id}")
 
     @patch("app.services.analytics.jobs.compute_domain_usage.logger")
-    @patch("app.services.analytics.common.load_compute_domain_usage_sql")
+    @patch("app.services.analytics.common.load_sql")
     @patch("app.services.analytics.queries.isinstance")
     def test_exec_database_query_fails(self, mock_isinstance, mock_load_sql, mock_logger):
         """Ошибка при запросе к базе данных."""
@@ -87,7 +87,7 @@ class TestUsageService(TestCase):
         self.assertEqual("analytics.errors.database_query_error", cm.exception.key)
 
     @patch("app.services.analytics.jobs.compute_domain_usage.logger")
-    @patch("app.services.analytics.common.load_compute_domain_usage_sql")
+    @patch("app.services.analytics.common.load_sql")
     @patch("app.services.analytics.queries.isinstance")
     def test_exec_unexpected_error(self, mock_isinstance, mock_load_sql, mock_logger):
         """Обработка неожиданного исключения."""
@@ -162,7 +162,7 @@ class TestUsageService(TestCase):
     # NOTE: загрузка SQL/выполнение запроса теперь вынесены в queries.py и покрываются интеграционно через exec()
 
     @patch("app.services.analytics.jobs.compute_domain_usage.logger")
-    @patch("app.services.analytics.common.load_compute_domain_usage_sql")
+    @patch("app.services.analytics.common.load_sql")
     @patch("app.services.analytics.queries.isinstance")
     def test_exec_empty_result(self, mock_isinstance, mock_load_sql, mock_logger):
         """Обработка пустого результата запроса."""
@@ -188,7 +188,7 @@ class TestUsageService(TestCase):
         self.assertEqual(len(result.data), 0)
 
     @patch("app.services.analytics.jobs.compute_domain_usage.logger")
-    @patch("app.services.analytics.common.load_compute_domain_usage_sql")
+    @patch("app.services.analytics.common.load_sql")
     @patch("app.services.analytics.queries.isinstance")
     def test_exec_pagination_calculation(self, mock_isinstance, mock_load_sql, mock_logger):
         """Корректный расчет пагинации."""
