@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from . import common
-from .types import DomainUsageRow
+from .types import DomainUsageRow, UsageSummaryRow
 
 
 async def execute_domain_usage_query(
@@ -31,7 +31,7 @@ async def execute_domain_usage_query(
     Returns:
         Список строк запроса в виде словарей.
     """
-    stmt = text(common.load_compute_domain_usage_sql())
+    stmt = text(common.load_sql("compute_domain_usage.sql"))
     params = {
         "user_id": user_id,
         "start_ts": start_ts,
@@ -46,3 +46,45 @@ async def execute_domain_usage_query(
         result = await asyncio.to_thread(session.execute, stmt, params)
 
     return list(result.mappings().all())
+
+
+async def execute_usage_summary_query(
+    session: Session | AsyncSession,
+    *,
+    user_id: str,
+    start_ts: datetime,
+    end_ts: datetime,
+) -> UsageSummaryRow:
+    """Функция выполнения SQL-запроса вычисления summary статистики использования.
+
+    Args:
+        session: Sync или Async сессия SQLAlchemy.
+        user_id: Идентификатор пользователя.
+        start_ts: Начало интервала.
+        end_ts: Конец интервала.
+
+    Returns:
+        Словарь со сводными метриками.
+    """
+    stmt = text(common.load_sql("compute_usage_summary.sql"))
+    params = {
+        "user_id": user_id,
+        "start_ts": start_ts,
+        "end_ts": end_ts,
+    }
+
+    if isinstance(session, AsyncSession):
+        result = await session.execute(stmt, params)
+    else:
+        result = await asyncio.to_thread(session.execute, stmt, params)
+
+    row = result.mappings().first()
+    if row is None:
+        return {
+            "total_seconds": 0,
+            "total_domains": 0,
+            "avg_seconds_per_domain": 0,
+            "top_domain": None,
+            "top_domain_seconds": 0,
+        }
+    return dict(row)
