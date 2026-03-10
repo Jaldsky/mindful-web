@@ -10,6 +10,7 @@ from ..core.common import path_matches
 from ..exceptions import AppException
 from .routes import (
     ANALYTICS_USAGE_PATH,
+    ANALYTICS_SUMMARY_PATH,
     HEALTHCHECK_PATH,
     SEND_EVENTS_PATH,
     AUTH_LOGIN_PATH,
@@ -150,7 +151,10 @@ async def method_not_allowed_handler(request: Request, exc: Exception) -> JSONRe
     """
     from ..services.healthcheck import healthcheck_method_not_allowed_response
     from ..services.events.http_handler import save_events_method_not_allowed_response
-    from ..services.analytics.http_handler import analytics_usage_method_not_allowed_response
+    from ..services.analytics.http_handler import (
+        analytics_usage_method_not_allowed_response,
+        analytics_summary_method_not_allowed_response,
+    )
     from ..services.auth.http_handler import (
         auth_login_method_not_allowed_response,
         auth_logout_method_not_allowed_response,
@@ -177,6 +181,9 @@ async def method_not_allowed_handler(request: Request, exc: Exception) -> JSONRe
 
     if str(request.url.path) == ANALYTICS_USAGE_PATH:
         return analytics_usage_method_not_allowed_response(request)
+
+    if str(request.url.path) == ANALYTICS_SUMMARY_PATH:
+        return analytics_summary_method_not_allowed_response(request)
 
     if str(request.url.path) == AUTH_REGISTER_PATH:
         return auth_register_method_not_allowed_response(request)

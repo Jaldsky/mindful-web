@@ -32,3 +32,4 @@ SEND_EVENTS_PATH = f"{EVENTS_PATH}/save"
 
 # Analytics
 ANALYTICS_USAGE_PATH = f"{API_V1_PREFIX}/analytics/usage"
+ANALYTICS_SUMMARY_PATH = f"{API_V1_PREFIX}/analytics/summary"
