@@ -7,16 +7,16 @@ from ...dependencies import (
     validate_summary_request_params,
     ActorContext,
 )
-from ...state_services import get_analytics_usage_service, get_analytics_summary_service
+from ...state_services import get_analytics_domains_service, get_analytics_summary_service
 from ....core.pagination import PaginationUrlBuilder
 from ....core.localizer import localize_key
 from ....schemas.analytics import (
-    AnalyticsUsageRequestSchema,
-    AnalyticsUsageResponseAcceptedSchema,
-    AnalyticsUsageResponseOkSchema,
-    AnalyticsUsageUnprocessableEntitySchema,
-    AnalyticsUsageInternalServerErrorSchema,
-    AnalyticsUsageMethodNotAllowedSchema,
+    AnalyticsDomainsRequestSchema,
+    AnalyticsDomainsResponseAcceptedSchema,
+    AnalyticsDomainsResponseOkSchema,
+    AnalyticsDomainsUnprocessableEntitySchema,
+    AnalyticsDomainsInternalServerErrorSchema,
+    AnalyticsDomainsMethodNotAllowedSchema,
     AnalyticsSummaryRequestSchema,
     AnalyticsSummaryResponseAcceptedSchema,
     AnalyticsSummaryResponseOkSchema,
@@ -30,26 +30,26 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 
 
 @router.get(
-    "/usage",
+    "/domains",
     responses={
         status.HTTP_200_OK: {
-            "model": AnalyticsUsageResponseOkSchema,
+            "model": AnalyticsDomainsResponseOkSchema,
             "description": "Готовая статистика активности по доменам",
         },
         status.HTTP_202_ACCEPTED: {
-            "model": AnalyticsUsageResponseAcceptedSchema,
+            "model": AnalyticsDomainsResponseAcceptedSchema,
             "description": "Задача поставлена в очередь, результат будет готов позже",
         },
         status.HTTP_405_METHOD_NOT_ALLOWED: {
-            "model": AnalyticsUsageMethodNotAllowedSchema,
+            "model": AnalyticsDomainsMethodNotAllowedSchema,
             "description": "Метод не поддерживается",
         },
         status.HTTP_422_UNPROCESSABLE_ENTITY: {
-            "model": AnalyticsUsageUnprocessableEntitySchema,
+            "model": AnalyticsDomainsUnprocessableEntitySchema,
             "description": "Ошибка бизнес валидации параметров запроса",
         },
         status.HTTP_500_INTERNAL_SERVER_ERROR: {
-            "model": AnalyticsUsageInternalServerErrorSchema,
+            "model": AnalyticsDomainsInternalServerErrorSchema,
             "description": "Внутренняя ошибка сервера",
         },
         status.HTTP_503_SERVICE_UNAVAILABLE: {
@@ -60,22 +60,22 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
     summary="Статистика активности пользователя по доменам",
     description=("Возвращает агрегированную статистику времени активности по доменам."),
 )
-async def get_usage(
+async def get_domains(
     request: Request,
     actor: ActorContext = Depends(get_actor_id_from_token),
-    request_params: AnalyticsUsageRequestSchema = Depends(validate_usage_request_params),
-    analytics_usage_service=Depends(get_analytics_usage_service),
-) -> AnalyticsUsageResponseOkSchema:
+    request_params: AnalyticsDomainsRequestSchema = Depends(validate_usage_request_params),
+    analytics_usage_service=Depends(get_analytics_domains_service),
+) -> AnalyticsDomainsResponseOkSchema:
     """Возвращает агрегированную статистику активности по доменам за интервал.
 
     Args:
         request: HTTP-запрос.
         actor: Контекст пользователя или анонимной сессии из JWT.
-        request_params: Валидированные параметры from, to, page.
-        analytics_usage_service: Сервис аналитики.
+        request_params: Валидированные параметры from, to, page, per_page, sort_by, order, search.
+        analytics_usage_service: Сервис доменной аналитики.
 
     Returns:
-        Данные по доменам и пагинация AnalyticsUsageResponseOkSchema.
+        Данные по доменам и пагинация AnalyticsDomainsResponseOkSchema.
 
     Raises:
         OrchestratorTimeoutException: Таймаут задачи (хендлер возвращает 202).
@@ -86,6 +86,10 @@ async def get_usage(
         from_date=request_params.from_date,
         to_date=request_params.to_date,
         page=request_params.page,
+        per_page=request_params.per_page,
+        sort_by=request_params.sort_by,
+        order=request_params.order,
+        search=request_params.search,
     )
     response.message = localize_key(
         request,

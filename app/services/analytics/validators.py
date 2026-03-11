@@ -1,13 +1,13 @@
 from datetime import date, datetime
 from typing import NoReturn
 
-from .constants import MIN_PAGE
+from .constants import MIN_PAGE, MIN_PER_PAGE, MAX_PER_PAGE
 from .exceptions import (
     InvalidDateFormatException,
     InvalidPageException,
     InvalidTimeRangeException,
 )
-from .types import Date, DateStr, Page
+from .types import Date, DateStr, Page, PageSize
 from ...config import DATE_FORMATS
 
 
@@ -84,4 +84,25 @@ class AnalyticsServiceValidators:
             raise InvalidPageException(
                 key="analytics.errors.invalid_page",
                 fallback="Page must be greater than or equal to 1",
+            )
+
+    @classmethod
+    def validate_per_page(cls, per_page: PageSize) -> None | NoReturn:
+        """Метод валидации размера страницы.
+
+        Args:
+            per_page: Размер страницы.
+
+        Raises:
+            InvalidPageException: Размер страницы не корректен.
+        """
+        if not isinstance(per_page, int):
+            raise InvalidPageException(
+                key="analytics.errors.invalid_page_type",
+                fallback="Per page must be a valid integer",
+            )
+        if per_page < MIN_PER_PAGE or per_page > MAX_PER_PAGE:
+            raise InvalidPageException(
+                key="analytics.errors.invalid_page",
+                fallback=f"Per page must be between {MIN_PER_PAGE} and {MAX_PER_PAGE}",
             )

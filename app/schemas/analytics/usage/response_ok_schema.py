@@ -22,8 +22,8 @@ class DomainUsageData(BaseModel):
     total_seconds: int = Field(..., ge=0, description="Количество секунд активности на домене")
 
 
-class AnalyticsUsageResponseOkSchema(BaseModel):
-    """Схема успешного ответа OK для analytics usage endpoint."""
+class AnalyticsDomainsResponseOkSchema(BaseModel):
+    """Схема успешного ответа OK для доменного analytics endpoint."""
 
     code: Literal["OK"] = Field("OK", description="Код статуса")
     message: str = Field(..., description="Сообщение статуса")

@@ -1,15 +1,22 @@
 from datetime import date
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 
-class AnalyticsUsageRequestSchema(BaseModel):
-    """Схема запроса для получения статистики использования доменов."""
+class AnalyticsDomainsRequestSchema(BaseModel):
+    """Схема запроса для получения статистики по доменам."""
 
     from_date: date = Field(..., description="Начало интервала")
     to_date: date = Field(..., description="Конец интервала")
     page: int = Field(default=1, description="Номер страницы")
+    per_page: int = Field(default=20, description="Количество элементов на странице")
+    sort_by: Literal["total_seconds", "domain", "category"] = Field(
+        default="total_seconds",
+        description="Поле сортировки",
+    )
+    order: Literal["asc", "desc"] = Field(default="desc", description="Направление сортировки")
+    search: str | None = Field(default=None, description="Поиск по домену (подстрока)")
 
     @field_validator("from_date", "to_date", mode="before")
     @classmethod
@@ -30,7 +37,7 @@ class AnalyticsUsageRequestSchema(BaseModel):
         return AnalyticsServiceValidators.validate_date(v)
 
     @model_validator(mode="after")
-    def validate_time_range(self) -> "AnalyticsUsageRequestSchema":
+    def validate_time_range(self) -> "AnalyticsDomainsRequestSchema":
         """Валидация временного диапазона (422)."""
         from ....services.analytics.validators import AnalyticsServiceValidators
 
@@ -46,11 +53,43 @@ class AnalyticsUsageRequestSchema(BaseModel):
         AnalyticsServiceValidators.validate_page(v)
         return v
 
+    @field_validator("per_page")
+    @classmethod
+    def validate_per_page(cls, v: int) -> int:
+        """Валидация размера страницы."""
+        from ....services.analytics.validators import AnalyticsServiceValidators
+
+        AnalyticsServiceValidators.validate_per_page(v)
+        return v
+
+    @field_validator("sort_by", "order", mode="before")
+    @classmethod
+    def normalize_sort_values(cls, v: Any) -> Any:
+        """Нормализация параметров сортировки."""
+        if isinstance(v, str):
+            return v.strip().lower()
+        return v
+
+    @field_validator("search", mode="before")
+    @classmethod
+    def normalize_search(cls, v: Any) -> Any:
+        """Нормализация поисковой строки."""
+        if v is None:
+            return None
+        if not isinstance(v, str):
+            return v
+        value = v.strip()
+        return value or None
+
     class Config:
         json_schema_extra = {
             "example": {
                 "from": "05-04-2025",
                 "to": "05-04-2025",
                 "page": 1,
+                "per_page": 20,
+                "sort_by": "total_seconds",
+                "order": "desc",
+                "search": "google",
             }
         }

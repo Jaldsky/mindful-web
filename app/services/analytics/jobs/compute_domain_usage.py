@@ -11,11 +11,11 @@ from sqlalchemy.orm import Session
 from ...exceptions import ServiceDatabaseErrorException
 from ....config import DEFAULT_PAGE_SIZE
 from ....schemas.analytics.usage.response_ok_schema import (
-    AnalyticsUsageResponseOkSchema,
+    AnalyticsDomainsResponseOkSchema,
     DomainUsageData,
     PaginationMeta,
 )
-from ..types import Date, Page, PageSize, DomainUsageRow
+from ..types import Date, Page, PageSize, DomainUsageRow, SortBy, SortOrder
 from ..exceptions import AnalyticsServiceException
 from ..queries import execute_domain_usage_query
 
@@ -31,6 +31,9 @@ class ComputeDomainUsageData:
     end_date: Date
     page: Page = 1
     page_size: PageSize = DEFAULT_PAGE_SIZE
+    sort_by: SortBy = "total_seconds"
+    order: SortOrder = "desc"
+    search: str | None = None
 
 
 class ComputeDomainUsageServiceBase:
@@ -94,6 +97,33 @@ class ComputeDomainUsageServiceBase:
         """
         return self._data.page_size
 
+    @property
+    def sort_by(self) -> SortBy:
+        """Свойство получения поля сортировки.
+
+        Returns:
+            Поле сортировки.
+        """
+        return self._data.sort_by
+
+    @property
+    def order(self) -> SortOrder:
+        """Свойство получения направления сортировки.
+
+        Returns:
+            Направление сортировки.
+        """
+        return self._data.order
+
+    @property
+    def search(self) -> str | None:
+        """Свойство получения поисковой строки по домену.
+
+        Returns:
+            Поисковая строка по домену или None.
+        """
+        return self._data.search
+
 
 class ComputeDomainUsageService(ComputeDomainUsageServiceBase):
     """Сервис вычисления статистики активности пользователя по доменам."""
@@ -156,6 +186,9 @@ class ComputeDomainUsageService(ComputeDomainUsageServiceBase):
             end_ts=end_dt,
             offset=(page - 1) * page_size,
             limit=page_size,
+            sort_by=self.sort_by,
+            order=self.order,
+            search=self.search,
         )
 
     @staticmethod
@@ -195,7 +228,7 @@ class ComputeDomainUsageService(ComputeDomainUsageServiceBase):
             for r in rows
         ]
 
-    async def exec(self) -> AnalyticsUsageResponseOkSchema | NoReturn:
+    async def exec(self) -> AnalyticsDomainsResponseOkSchema | NoReturn:
         """Метод вычисления статистики активности пользователя по доменам.
 
         Процесс включает:
@@ -205,7 +238,7 @@ class ComputeDomainUsageService(ComputeDomainUsageServiceBase):
         4. Сборку схемы ответа с пагинацией и данными
 
         Returns:
-            AnalyticsUsageResponseOkSchema с агрегированной статистикой.
+            AnalyticsDomainsResponseOkSchema с агрегированной статистикой.
 
         Raises:
             ServiceDatabaseErrorException: При ошибке запроса к базе данных.
@@ -219,9 +252,9 @@ class ComputeDomainUsageService(ComputeDomainUsageServiceBase):
             pagination_meta = self._build_pagination(rows, page, page_size)
             data = self._build_data(rows)
 
-            logger.info(f"Successfully computed usage analytics for user {self.user_id}")
+            logger.info(f"Successfully computed domains analytics for user {self.user_id}")
 
-            return AnalyticsUsageResponseOkSchema(
+            return AnalyticsDomainsResponseOkSchema(
                 code="OK",
                 message="analytics.messages.usage_computed",
                 from_date=self.start_date,

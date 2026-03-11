@@ -1,8 +1,8 @@
 from ...error_response_schema import ErrorResponseSchema
 
 
-class AnalyticsUsageMethodNotAllowedSchema(ErrorResponseSchema):
-    """Схема ошибки 405 Method Not Allowed для analytics usage endpoint."""
+class AnalyticsDomainsMethodNotAllowedSchema(ErrorResponseSchema):
+    """Схема ошибки 405 Method Not Allowed для доменного analytics endpoint."""
 
     class Config:
         json_schema_extra = {

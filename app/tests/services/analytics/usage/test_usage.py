@@ -8,12 +8,12 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.services.analytics import ComputeDomainUsageService
 from app.services.analytics.exceptions import AnalyticsServiceException
-from app.schemas.analytics.usage.response_ok_schema import AnalyticsUsageResponseOkSchema
+from app.schemas.analytics.usage.response_ok_schema import AnalyticsDomainsResponseOkSchema
 from app.services.exceptions import ServiceDatabaseErrorException
 
 
 class TestUsageService(TestCase):
-    """Тесты для AnalyticsUsageService."""
+    """Тесты для AnalyticsDomainsService."""
 
     def setUp(self):
         self.logger = Mock()
@@ -53,7 +53,7 @@ class TestUsageService(TestCase):
             ).exec()
         )
 
-        self.assertIsInstance(result, AnalyticsUsageResponseOkSchema)
+        self.assertIsInstance(result, AnalyticsDomainsResponseOkSchema)
         self.assertEqual(result.code, "OK")
         self.assertEqual(result.from_date, self.start_date)
         self.assertEqual(result.to_date, self.end_date)
@@ -61,7 +61,7 @@ class TestUsageService(TestCase):
         self.assertEqual(result.pagination.per_page, self.page_size)
         self.assertEqual(len(result.data), 1)
         self.assertEqual(result.data[0].domain, "example.com")
-        mock_logger.info.assert_called_with(f"Successfully computed usage analytics for user {self.user_id}")
+        mock_logger.info.assert_called_with(f"Successfully computed domains analytics for user {self.user_id}")
 
     @patch("app.services.analytics.jobs.compute_domain_usage.logger")
     @patch("app.services.analytics.common.load_sql")
@@ -183,7 +183,7 @@ class TestUsageService(TestCase):
             ).exec()
         )
 
-        self.assertIsInstance(result, AnalyticsUsageResponseOkSchema)
+        self.assertIsInstance(result, AnalyticsDomainsResponseOkSchema)
         self.assertEqual(result.pagination.total_items, 0)
         self.assertEqual(len(result.data), 0)
 

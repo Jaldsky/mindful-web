@@ -1,11 +1,12 @@
 from typing import Any
 from uuid import UUID
 
-from ..types import Page, Date
-from ....schemas.analytics import AnalyticsUsageResponseOkSchema
+from ..types import Page, Date, PageSize, SortBy, SortOrder
+from ....schemas.analytics import AnalyticsDomainsResponseOkSchema
+from ....config import DEFAULT_PAGE_SIZE
 
 
-class AnalyticsUsageService:
+class AnalyticsDomainsService:
     """Сервис получения статистики активности пользователя по доменам."""
 
     async def exec(
@@ -14,7 +15,11 @@ class AnalyticsUsageService:
         from_date: Date,
         to_date: Date,
         page: Page = 1,
-    ) -> AnalyticsUsageResponseOkSchema:
+        per_page: PageSize = DEFAULT_PAGE_SIZE,
+        sort_by: SortBy = "total_seconds",
+        order: SortOrder = "desc",
+        search: str | None = None,
+    ) -> AnalyticsDomainsResponseOkSchema:
         """Метод получения статистики использования по доменам.
 
         Процесс включает:
@@ -27,9 +32,13 @@ class AnalyticsUsageService:
             from_date: Начало периода.
             to_date: Конец периода.
             page: Номер страницы.
+            per_page: Размер страницы (количество доменов на странице).
+            sort_by: Поле сортировки агрегатов по доменам.
+            order: Направление сортировки (asc или desc).
+            search: Поисковая строка для фильтрации доменов по подстроке.
 
         Returns:
-            Схема ответа AnalyticsUsageResponseOkSchema.
+            Схема ответа AnalyticsDomainsResponseOkSchema.
 
         Raises:
             OrchestratorTimeoutException: Если задача не успела выполниться в пределах таймаута (202).
@@ -44,5 +53,9 @@ class AnalyticsUsageService:
             start_date=from_date,
             end_date=to_date,
             page=page,
+            page_size=per_page,
+            sort_by=sort_by,
+            order=order,
+            search=search,
         )
-        return AnalyticsUsageResponseOkSchema(**data_dict)
+        return AnalyticsDomainsResponseOkSchema(**data_dict)

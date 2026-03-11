@@ -45,8 +45,22 @@ class TestAnalyticsQueries(IsolatedAsyncioTestCase):
         self.assertEqual(rows, expected_rows)
         mock_load_sql.assert_called_once_with("compute_domain_usage.sql")
         session.execute.assert_called_once()
-        _, call_kwargs = session.execute.call_args
+        _, call_args, call_kwargs = session.execute.mock_calls[0]
         self.assertEqual(call_kwargs, {})
+        params = call_args[1]
+        self.assertEqual(
+            params,
+            {
+                "user_id": "u-1",
+                "start_ts": start_ts,
+                "end_ts": end_ts,
+                "offset": 0,
+                "limit": 50,
+                "sort_by": "total_seconds",
+                "sort_order": "desc",
+                "search": None,
+            },
+        )
 
     async def test_execute_domain_usage_query_sync_session_uses_to_thread(self):
         """Ветка sync Session: запрос выполняется через asyncio.to_thread."""
@@ -74,15 +88,21 @@ class TestAnalyticsQueries(IsolatedAsyncioTestCase):
 
         self.assertEqual(rows, expected_rows)
         mock_load_sql.assert_called_once_with("compute_domain_usage.sql")
-        mock_to_thread.assert_awaited_once_with(
-            session.execute,
-            ANY,
+        mock_to_thread.assert_awaited_once()
+        _, to_thread_args, to_thread_kwargs = mock_to_thread.mock_calls[0]
+        self.assertEqual(to_thread_args[0], session.execute)
+        self.assertEqual(to_thread_args[1], ANY)
+        self.assertEqual(
+            to_thread_args[2],
             {
                 "user_id": "u-2",
                 "start_ts": start_ts,
                 "end_ts": end_ts,
                 "offset": 10,
                 "limit": 20,
+                "sort_by": "total_seconds",
+                "sort_order": "desc",
+                "search": None,
             },
         )
 

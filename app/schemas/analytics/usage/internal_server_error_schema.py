@@ -6,8 +6,8 @@ from ..analytics_error_code import AnalyticsErrorCode
 from ...general import InternalServerErrorSchema
 
 
-class AnalyticsUsageInternalServerErrorSchema(InternalServerErrorSchema):
-    """Схема ошибки 500 Internal Server Error для analytics usage endpoint."""
+class AnalyticsDomainsInternalServerErrorSchema(InternalServerErrorSchema):
+    """Схема ошибки 500 Internal Server Error для доменного analytics endpoint."""
 
     code: Union[ErrorCode | AnalyticsErrorCode] = Field(..., description="Код ошибки")
 

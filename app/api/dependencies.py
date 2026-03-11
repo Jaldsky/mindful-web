@@ -9,7 +9,7 @@ from ..db.session.provider import Provider
 from ..schemas.accept_language_header_schema import AcceptLanguageHeaderSchema
 from ..db.types import DatabaseSession
 from ..db.models.tables import User
-from ..schemas.analytics import AnalyticsUsageRequestSchema, AnalyticsSummaryRequestSchema
+from ..schemas.analytics import AnalyticsDomainsRequestSchema, AnalyticsSummaryRequestSchema
 from ..schemas.auth import OAuthProviderPathSchema
 from ..services.auth.exceptions import TokenMissingException, TokenInvalidException
 from ..services.auth.access import authenticate_access_token, extract_user_id_from_access_token
@@ -64,12 +64,32 @@ def validate_usage_request_params(
         Query(alias="to", description="Конец интервала (дата в формате DD-MM-YYYY)", example="05-04-2025"),
     ],
     page: Annotated[int, Query(ge=1, description="Номер страницы", example=1)] = 1,
-) -> AnalyticsUsageRequestSchema:
-    """Dependency для валидации параметров запроса analytics usage."""
-    return AnalyticsUsageRequestSchema(
+    per_page: Annotated[int, Query(ge=1, le=100, description="Размер страницы", example=20)] = 20,
+    sort_by: Annotated[
+        str,
+        Query(
+            description="Поле сортировки: total_seconds | domain | category",
+            example="total_seconds",
+        ),
+    ] = "total_seconds",
+    order: Annotated[
+        str,
+        Query(
+            description="Направление сортировки: asc | desc",
+            example="desc",
+        ),
+    ] = "desc",
+    search: Annotated[str | None, Query(description="Поиск по домену", example="youtube")] = None,
+) -> AnalyticsDomainsRequestSchema:
+    """Dependency для валидации параметров запроса analytics domains."""
+    return AnalyticsDomainsRequestSchema(
         from_date=from_date,
         to_date=to_date,
         page=page,
+        per_page=per_page,
+        sort_by=sort_by,
+        order=order,
+        search=search,
     )
 
 

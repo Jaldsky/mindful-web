@@ -25,16 +25,16 @@ def get_save_events_service(request: Request):
     return request.app.state.save_events_service
 
 
-def get_analytics_usage_service(request: Request):
-    """Возвращает сервис аналитики использования по доменам.
+def get_analytics_domains_service(request: Request):
+    """Возвращает сервис доменной аналитики по доменам.
 
     Args:
         request: HTTP-запрос.
 
     Returns:
-        Экземпляр AnalyticsUsageService.
+        Экземпляр AnalyticsDomainsService.
     """
-    return request.app.state.analytics_usage_service
+    return request.app.state.analytics_domains_service
 
 
 def get_analytics_summary_service(request: Request):
