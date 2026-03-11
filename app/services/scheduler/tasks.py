@@ -2,7 +2,7 @@ import asyncio
 from uuid import UUID
 from celery import shared_task
 
-from ..analytics.types import Date, Page
+from ..analytics.types import Date, Page, PageSize, SortBy, SortOrder
 from ...config import DEFAULT_PAGE_SIZE
 from ...db.session.provider import Provider
 from ..analytics import ComputeDomainUsageService, ComputeUsageSummaryService
@@ -14,7 +14,10 @@ def compute_domain_usage_task(
     start_date: Date,
     end_date: Date,
     page: Page = 1,
-    page_size: int = DEFAULT_PAGE_SIZE,
+    page_size: PageSize = DEFAULT_PAGE_SIZE,
+    sort_by: SortBy = "total_seconds",
+    order: SortOrder = "desc",
+    search: str | None = None,
 ) -> dict:
     """Celery задача вычисления статистики использования по доменам.
 
@@ -37,6 +40,9 @@ def compute_domain_usage_task(
             end_date=end_date,
             page=page,
             page_size=page_size,
+            sort_by=sort_by,
+            order=order,
+            search=search,
         )
         result_schema = asyncio.run(service.exec())
         return result_schema.model_dump(mode="json")

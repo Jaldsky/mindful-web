@@ -1,7 +1,7 @@
-from .usage import AnalyticsUsageService
+from .usage import AnalyticsDomainsService
 from .summary import AnalyticsSummaryService
 
 __all__ = [
-    "AnalyticsUsageService",
+    "AnalyticsDomainsService",
     "AnalyticsSummaryService",
 ]

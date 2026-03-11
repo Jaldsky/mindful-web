@@ -5,8 +5,8 @@ from ...error_response_schema import ErrorResponseSchema, ErrorCode
 from ..analytics_error_code import AnalyticsErrorCode
 
 
-class AnalyticsUsageUnprocessableEntitySchema(ErrorResponseSchema):
-    """Схема ошибки 422 Unprocessable Entity для analytics usage endpoint."""
+class AnalyticsDomainsUnprocessableEntitySchema(ErrorResponseSchema):
+    """Схема ошибки 422 Unprocessable Entity для доменного analytics endpoint."""
 
     code: Union[ErrorCode | AnalyticsErrorCode] = Field(..., description="Код ошибки")
 

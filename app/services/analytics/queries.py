@@ -17,6 +17,9 @@ async def execute_domain_usage_query(
     end_ts: datetime,
     offset: int,
     limit: int,
+    sort_by: str = "total_seconds",
+    order: str = "desc",
+    search: str | None = None,
 ) -> list[DomainUsageRow]:
     """Функция выполнения SQL-запроса вычисления статистики использования доменов.
 
@@ -38,6 +41,9 @@ async def execute_domain_usage_query(
         "end_ts": end_ts,
         "offset": offset,
         "limit": limit,
+        "sort_by": sort_by,
+        "sort_order": order,
+        "search": search,
     }
 
     if isinstance(session, AsyncSession):

@@ -1,11 +1,11 @@
 from .analytics_error_code import AnalyticsErrorCode
 from .usage import (
-    AnalyticsUsageRequestSchema,
-    AnalyticsUsageResponseAcceptedSchema,
-    AnalyticsUsageResponseOkSchema,
-    AnalyticsUsageUnprocessableEntitySchema,
-    AnalyticsUsageInternalServerErrorSchema,
-    AnalyticsUsageMethodNotAllowedSchema,
+    AnalyticsDomainsRequestSchema,
+    AnalyticsDomainsResponseAcceptedSchema,
+    AnalyticsDomainsResponseOkSchema,
+    AnalyticsDomainsUnprocessableEntitySchema,
+    AnalyticsDomainsInternalServerErrorSchema,
+    AnalyticsDomainsMethodNotAllowedSchema,
 )
 from .summary import (
     AnalyticsSummaryRequestSchema,
@@ -19,13 +19,13 @@ from .summary import (
 __all__ = (
     # Common
     "AnalyticsErrorCode",
-    # Analytics Usage
-    "AnalyticsUsageRequestSchema",
-    "AnalyticsUsageResponseAcceptedSchema",
-    "AnalyticsUsageResponseOkSchema",
-    "AnalyticsUsageUnprocessableEntitySchema",
-    "AnalyticsUsageInternalServerErrorSchema",
-    "AnalyticsUsageMethodNotAllowedSchema",
+    # Analytics Domains
+    "AnalyticsDomainsRequestSchema",
+    "AnalyticsDomainsResponseAcceptedSchema",
+    "AnalyticsDomainsResponseOkSchema",
+    "AnalyticsDomainsUnprocessableEntitySchema",
+    "AnalyticsDomainsInternalServerErrorSchema",
+    "AnalyticsDomainsMethodNotAllowedSchema",
     # Analytics Summary
     "AnalyticsSummaryRequestSchema",
     "AnalyticsSummaryResponseOkSchema",

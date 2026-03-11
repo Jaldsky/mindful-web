@@ -2,8 +2,8 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-class AnalyticsUsageResponseAcceptedSchema(BaseModel):
-    """Схема успешного ответа ACCEPTED для analytics usage endpoint."""
+class AnalyticsDomainsResponseAcceptedSchema(BaseModel):
+    """Схема успешного ответа ACCEPTED для доменного analytics endpoint."""
 
     code: Literal["ACCEPTED"] = Field("ACCEPTED", description="Код статуса")
     message: str = Field(..., description="Сообщение статуса")

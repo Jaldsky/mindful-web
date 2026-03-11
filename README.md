@@ -122,7 +122,7 @@ poetry run invoke format
 
 ### Events & Analytics (`/api/v1/`)
 - `POST /events/save` — Save batch of attention events
-- `GET /analytics/usage` — Get domain usage statistics
+- `GET /analytics/domains` — Get domain usage statistics
 
 ### User (`/api/v1/user/`)
 - `GET /profile` — Get user profile

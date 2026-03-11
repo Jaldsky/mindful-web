@@ -14,15 +14,15 @@ from starlette.status import (
 
 from app.main import app
 from app.api.dependencies import ActorContext, get_actor_id_from_token
-from app.api.state_services import get_analytics_usage_service, get_analytics_summary_service
+from app.api.state_services import get_analytics_domains_service, get_analytics_summary_service
 from app.schemas import ErrorCode
 from app.schemas.analytics.analytics_error_code import AnalyticsErrorCode
 from app.schemas.analytics import (
-    AnalyticsUsageResponseOkSchema,
-    AnalyticsUsageResponseAcceptedSchema,
-    AnalyticsUsageMethodNotAllowedSchema,
-    AnalyticsUsageUnprocessableEntitySchema,
-    AnalyticsUsageInternalServerErrorSchema,
+    AnalyticsDomainsResponseOkSchema,
+    AnalyticsDomainsResponseAcceptedSchema,
+    AnalyticsDomainsMethodNotAllowedSchema,
+    AnalyticsDomainsUnprocessableEntitySchema,
+    AnalyticsDomainsInternalServerErrorSchema,
     AnalyticsSummaryResponseOkSchema,
     AnalyticsSummaryResponseAcceptedSchema,
     AnalyticsSummaryMethodNotAllowedSchema,
@@ -36,18 +36,18 @@ from app.services.scheduler.exceptions import (
 )
 
 
-class TestAnalyticsUsageEndpoint(TestCase):
-    """Тесты для analytics usage endpoint."""
+class TestAnalyticsDomainsEndpoint(TestCase):
+    """Тесты для analytics domains endpoint."""
 
     def setUp(self):
         """Настройка тестового клиента."""
         logging.disable(logging.CRITICAL)
 
         self.mock_analytics_service = Mock()
-        app.dependency_overrides[get_analytics_usage_service] = lambda: self.mock_analytics_service
+        app.dependency_overrides[get_analytics_domains_service] = lambda: self.mock_analytics_service
 
         self.client = TestClient(app)
-        self.usage_url = "/api/v1/analytics/usage"
+        self.usage_url = "/api/v1/analytics/domains"
         self.user_id = uuid4()
         self.auth_headers = {"Authorization": "Bearer test-token"}
         self.valid_params = {
@@ -83,7 +83,7 @@ class TestAnalyticsUsageEndpoint(TestCase):
                 {"domain": "youtube.com", "category": "entertainment", "total_seconds": 600},
             ],
         }
-        self.mock_analytics_service.exec = AsyncMock(return_value=AnalyticsUsageResponseOkSchema(**mock_data))
+        self.mock_analytics_service.exec = AsyncMock(return_value=AnalyticsDomainsResponseOkSchema(**mock_data))
 
         response = self.client.get(
             self.usage_url,
@@ -93,7 +93,7 @@ class TestAnalyticsUsageEndpoint(TestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
-        schema = AnalyticsUsageResponseOkSchema(**data)
+        schema = AnalyticsDomainsResponseOkSchema(**data)
         self.assertEqual(schema.code, "OK")
         self.assertEqual(schema.message, "Usage analytics computed")
         self.assertEqual(len(schema.data), 2)
@@ -115,7 +115,7 @@ class TestAnalyticsUsageEndpoint(TestCase):
 
         self.assertEqual(response.status_code, HTTP_202_ACCEPTED)
         data = response.json()
-        schema = AnalyticsUsageResponseAcceptedSchema(**data)
+        schema = AnalyticsDomainsResponseAcceptedSchema(**data)
         self.assertEqual(schema.code, "ACCEPTED")
         self.assertEqual(schema.task_id, task_id)
 
@@ -152,7 +152,7 @@ class TestAnalyticsUsageEndpoint(TestCase):
                 self.assertEqual(response.status_code, HTTP_405_METHOD_NOT_ALLOWED)
 
                 data = response.json()
-                schema = AnalyticsUsageMethodNotAllowedSchema(**data)
+                schema = AnalyticsDomainsMethodNotAllowedSchema(**data)
                 self.assertEqual(schema.code, ErrorCode.METHOD_NOT_ALLOWED)
 
     def test_usage_method_not_allowed_content_type(self):
@@ -193,7 +193,7 @@ class TestAnalyticsUsageEndpoint(TestCase):
         self.assertEqual(response.status_code, HTTP_422_UNPROCESSABLE_ENTITY)
 
         data = response.json()
-        schema = AnalyticsUsageUnprocessableEntitySchema(**data)
+        schema = AnalyticsDomainsUnprocessableEntitySchema(**data)
         self.assertEqual(schema.code, AnalyticsErrorCode.INVALID_DATE_FORMAT)
 
     def test_usage_invalid_page_parameter(self):
@@ -226,7 +226,7 @@ class TestAnalyticsUsageEndpoint(TestCase):
             actor_id=self.user_id,
             actor_type="anon",
         )
-        self.mock_analytics_service.exec = AsyncMock(return_value=AnalyticsUsageResponseOkSchema(**mock_data))
+        self.mock_analytics_service.exec = AsyncMock(return_value=AnalyticsDomainsResponseOkSchema(**mock_data))
 
         response = self.client.get(
             self.usage_url,
@@ -256,7 +256,7 @@ class TestAnalyticsUsageEndpoint(TestCase):
             },
             "data": [],
         }
-        self.mock_analytics_service.exec = AsyncMock(return_value=AnalyticsUsageResponseOkSchema(**mock_data))
+        self.mock_analytics_service.exec = AsyncMock(return_value=AnalyticsDomainsResponseOkSchema(**mock_data))
 
         response = self.client.get(
             self.usage_url,
@@ -266,9 +266,49 @@ class TestAnalyticsUsageEndpoint(TestCase):
 
         self.assertEqual(response.status_code, HTTP_200_OK)
         data = response.json()
-        schema = AnalyticsUsageResponseOkSchema(**data)
+        schema = AnalyticsDomainsResponseOkSchema(**data)
         self.assertIsNotNone(schema.pagination.next)
         self.assertIsNone(schema.pagination.prev)
+
+    def test_usage_passes_filter_and_sort_params(self):
+        """Параметры per_page/sort_by/order/search прокидываются в сервис."""
+        mock_data = {
+            "code": "OK",
+            "message": "Usage analytics computed",
+            "from_date": "2025-04-05",
+            "to_date": "2025-04-05",
+            "pagination": {
+                "page": 2,
+                "per_page": 50,
+                "total_items": 0,
+                "total_pages": 0,
+                "next": None,
+                "prev": None,
+            },
+            "data": [],
+        }
+        self.mock_analytics_service.exec = AsyncMock(return_value=AnalyticsDomainsResponseOkSchema(**mock_data))
+
+        response = self.client.get(
+            self.usage_url,
+            params={
+                **self.valid_params,
+                "page": 2,
+                "per_page": 50,
+                "sort_by": "domain",
+                "order": "asc",
+                "search": "youtube",
+            },
+            headers=self.auth_headers,
+        )
+
+        self.assertEqual(response.status_code, HTTP_200_OK)
+        call_kwargs = self.mock_analytics_service.exec.call_args.kwargs
+        self.assertEqual(call_kwargs.get("page"), 2)
+        self.assertEqual(call_kwargs.get("per_page"), 50)
+        self.assertEqual(call_kwargs.get("sort_by"), "domain")
+        self.assertEqual(call_kwargs.get("order"), "asc")
+        self.assertEqual(call_kwargs.get("search"), "youtube")
 
     def test_usage_response_content_type(self):
         """Успешный ответ возвращает JSON с правильным Content-Type."""
@@ -287,7 +327,7 @@ class TestAnalyticsUsageEndpoint(TestCase):
             },
             "data": [],
         }
-        self.mock_analytics_service.exec = AsyncMock(return_value=AnalyticsUsageResponseOkSchema(**mock_data))
+        self.mock_analytics_service.exec = AsyncMock(return_value=AnalyticsDomainsResponseOkSchema(**mock_data))
 
         response = self.client.get(
             self.usage_url,
@@ -315,7 +355,7 @@ class TestAnalyticsUsageEndpoint(TestCase):
             },
             "data": [],
         }
-        self.mock_analytics_service.exec = AsyncMock(return_value=AnalyticsUsageResponseOkSchema(**mock_data))
+        self.mock_analytics_service.exec = AsyncMock(return_value=AnalyticsDomainsResponseOkSchema(**mock_data))
 
         for _ in range(5):
             response = self.client.get(
@@ -326,7 +366,7 @@ class TestAnalyticsUsageEndpoint(TestCase):
             self.assertEqual(response.status_code, HTTP_200_OK)
 
             data = response.json()
-            schema = AnalyticsUsageResponseOkSchema(**data)
+            schema = AnalyticsDomainsResponseOkSchema(**data)
             self.assertEqual(schema.code, "OK")
 
 
