@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from . import common
-from .types import DomainUsageRow, UsageSummaryRow
+from .types import DomainUsageRow, UsageSummaryRow, UsageTimelineRow
 
 
 async def execute_domain_usage_query(
@@ -94,3 +94,42 @@ async def execute_usage_summary_query(
             "top_domain_seconds": 0,
         }
     return dict(row)
+
+
+async def execute_usage_timeline_query(
+    session: Session | AsyncSession,
+    *,
+    user_id: str,
+    start_ts: datetime,
+    end_ts: datetime,
+    granularity: str = "day",
+    top_domains_limit: int = 5,
+) -> list[UsageTimelineRow]:
+    """Функция выполнения SQL-запроса вычисления timeline статистики использования.
+
+    Args:
+        session: Sync или Async сессия SQLAlchemy.
+        user_id: Идентификатор пользователя.
+        start_ts: Начало интервала.
+        end_ts: Конец интервала.
+        granularity: Гранулярность агрегации (day или hour).
+        top_domains_limit: Максимум доменов в каждом временном бакете.
+
+    Returns:
+        Список временных бакетов со статистикой.
+    """
+    stmt = text(common.load_sql("compute_timeline_usage.sql"))
+    params = {
+        "user_id": user_id,
+        "start_ts": start_ts,
+        "end_ts": end_ts,
+        "granularity": granularity,
+        "top_domains_limit": top_domains_limit,
+    }
+
+    if isinstance(session, AsyncSession):
+        result = await session.execute(stmt, params)
+    else:
+        result = await asyncio.to_thread(session.execute, stmt, params)
+
+    return list(result.mappings().all())

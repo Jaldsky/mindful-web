@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.analytics.queries import (
     execute_domain_usage_query,
     execute_usage_summary_query,
+    execute_usage_timeline_query,
 )
 
 
@@ -211,5 +212,96 @@ class TestAnalyticsQueries(IsolatedAsyncioTestCase):
                 "user_id": "u-5",
                 "start_ts": start_ts,
                 "end_ts": end_ts,
+            },
+        )
+
+    async def test_execute_usage_timeline_query_async_session(self):
+        """Ветка AsyncSession: timeline-запрос выполняется через session.execute."""
+        session = AsyncMock()
+        start_ts = datetime(2025, 1, 1, 0, 0, tzinfo=timezone.utc)
+        end_ts = datetime(2025, 1, 2, 0, 0, tzinfo=timezone.utc)
+        expected_rows = [
+            {
+                "bucket_start": datetime(2025, 1, 1, 0, 0, tzinfo=timezone.utc),
+                "total_seconds": 3600,
+                "unique_domains": 2,
+                "domains": [{"domain": "example.com", "total_seconds": 1800}],
+            }
+        ]
+        result_obj = Mock()
+        result_obj.mappings.return_value.all.return_value = expected_rows
+        session.execute.return_value = result_obj
+
+        with (
+            patch("app.services.analytics.queries.common.load_sql", return_value="SELECT 1") as mock_load_sql,
+            patch(
+                "app.services.analytics.queries.isinstance",
+                side_effect=lambda obj, cls: obj is session and cls == AsyncSession,
+            ),
+        ):
+            rows = await execute_usage_timeline_query(
+                session,
+                user_id="u-6",
+                start_ts=start_ts,
+                end_ts=end_ts,
+                granularity="hour",
+                top_domains_limit=7,
+            )
+
+        self.assertEqual(rows, expected_rows)
+        mock_load_sql.assert_called_once_with("compute_timeline_usage.sql")
+        session.execute.assert_called_once()
+        _, call_args, call_kwargs = session.execute.mock_calls[0]
+        self.assertEqual(call_kwargs, {})
+        params = call_args[1]
+        self.assertEqual(
+            params,
+            {
+                "user_id": "u-6",
+                "start_ts": start_ts,
+                "end_ts": end_ts,
+                "granularity": "hour",
+                "top_domains_limit": 7,
+            },
+        )
+
+    async def test_execute_usage_timeline_query_sync_session_uses_to_thread(self):
+        """Ветка sync Session для timeline: используется asyncio.to_thread."""
+        session = Mock()
+        start_ts = datetime(2025, 1, 1, 0, 0, tzinfo=timezone.utc)
+        end_ts = datetime(2025, 1, 1, 23, 59, tzinfo=timezone.utc)
+        expected_rows = [{"bucket_start": start_ts, "total_seconds": 0, "unique_domains": 0, "domains": []}]
+        result_obj = Mock()
+        result_obj.mappings.return_value.all.return_value = expected_rows
+
+        with (
+            patch("app.services.analytics.queries.common.load_sql", return_value="SELECT 1") as mock_load_sql,
+            patch("app.services.analytics.queries.asyncio.to_thread", new_callable=AsyncMock) as mock_to_thread,
+            patch("app.services.analytics.queries.isinstance", return_value=False),
+        ):
+            mock_to_thread.return_value = result_obj
+            rows = await execute_usage_timeline_query(
+                session,
+                user_id="u-7",
+                start_ts=start_ts,
+                end_ts=end_ts,
+                granularity="day",
+                top_domains_limit=5,
+            )
+
+        self.assertEqual(rows, expected_rows)
+        mock_load_sql.assert_called_once_with("compute_timeline_usage.sql")
+        mock_to_thread.assert_awaited_once()
+        _, to_thread_args, to_thread_kwargs = mock_to_thread.mock_calls[0]
+        self.assertEqual(to_thread_args[0], session.execute)
+        self.assertEqual(to_thread_args[1], ANY)
+        self.assertEqual(
+            to_thread_args[2],
+            {
+                "user_id": "u-7",
+                "start_ts": start_ts,
+                "end_ts": end_ts,
+                "granularity": "day",
+                "top_domains_limit": 5,
             },
         )
