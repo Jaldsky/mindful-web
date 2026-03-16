@@ -11,6 +11,7 @@ from ..exceptions import AppException
 from .routes import (
     ANALYTICS_USAGE_PATH,
     ANALYTICS_SUMMARY_PATH,
+    ANALYTICS_TIMELINE_PATH,
     HEALTHCHECK_PATH,
     SEND_EVENTS_PATH,
     AUTH_LOGIN_PATH,
@@ -154,6 +155,7 @@ async def method_not_allowed_handler(request: Request, exc: Exception) -> JSONRe
     from ..services.analytics.http_handler import (
         analytics_usage_method_not_allowed_response,
         analytics_summary_method_not_allowed_response,
+        analytics_timeline_method_not_allowed_response,
     )
     from ..services.auth.http_handler import (
         auth_login_method_not_allowed_response,
@@ -184,6 +186,9 @@ async def method_not_allowed_handler(request: Request, exc: Exception) -> JSONRe
 
     if str(request.url.path) == ANALYTICS_SUMMARY_PATH:
         return analytics_summary_method_not_allowed_response(request)
+
+    if str(request.url.path) == ANALYTICS_TIMELINE_PATH:
+        return analytics_timeline_method_not_allowed_response(request)
 
     if str(request.url.path) == AUTH_REGISTER_PATH:
         return auth_register_method_not_allowed_response(request)

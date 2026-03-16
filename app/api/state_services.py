@@ -49,6 +49,18 @@ def get_analytics_summary_service(request: Request):
     return request.app.state.analytics_summary_service
 
 
+def get_analytics_timeline_service(request: Request):
+    """Возвращает сервис timeline аналитики использования по времени.
+
+    Args:
+        request: HTTP-запрос.
+
+    Returns:
+        Экземпляр AnalyticsTimelineService.
+    """
+    return request.app.state.analytics_timeline_service
+
+
 def get_anonymous_service(request: Request):
     """Возвращает сервис создания анонимной сессии.
 
