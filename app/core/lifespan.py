@@ -3,7 +3,7 @@ from fastapi import FastAPI
 
 from .localizer import Localizer
 from ..services.events import SaveEventsService
-from ..services.analytics import AnalyticsDomainsService, AnalyticsSummaryService
+from ..services.analytics import AnalyticsDomainsService, AnalyticsSummaryService, AnalyticsTimelineService
 from ..services.healthcheck import DatabaseHealthcheckService
 from ..services.auth import (
     AnonymousService,
@@ -56,4 +56,5 @@ async def lifespan(app: FastAPI):
     # Analytics service
     app.state.analytics_domains_service = AnalyticsDomainsService()  # type: ignore[attr-defined]
     app.state.analytics_summary_service = AnalyticsSummaryService()  # type: ignore[attr-defined]
+    app.state.analytics_timeline_service = AnalyticsTimelineService()  # type: ignore[attr-defined]
     yield
