@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from typing import NoReturn
 
-from .constants import MIN_PAGE, MIN_PER_PAGE, MAX_PER_PAGE
+from .constants import MIN_PAGE, MIN_PER_PAGE, MAX_PER_PAGE, MAX_TIMELINE_HOURLY_DAYS, MAX_TIMELINE_DAILY_DAYS
 from .exceptions import (
     InvalidDateFormatException,
     InvalidPageException,
@@ -106,3 +106,29 @@ class AnalyticsServiceValidators:
                 key="analytics.errors.invalid_page",
                 fallback=f"Per page must be between {MIN_PER_PAGE} and {MAX_PER_PAGE}",
             )
+
+    @classmethod
+    def validate_timeline_time_range(cls, from_date: Date, to_date: Date, granularity: str) -> None | NoReturn:
+        """Метод валидации диапазона timeline с учетом granularity.
+
+        Args:
+            from_date: Дата начала диапазона.
+            to_date: Дата конца диапазона.
+            granularity: Гранулярность timeline (day | hour).
+
+        Raises:
+            InvalidTimeRangeException: Диапазон слишком большой для hour-гранулярности.
+        """
+        span_days = (to_date - from_date).days + 1
+        if granularity == "hour":
+            if span_days > MAX_TIMELINE_HOURLY_DAYS:
+                raise InvalidTimeRangeException(
+                    key="analytics.errors.timeline_hour_range_too_large",
+                    fallback=f"For hourly timeline, date range must be <= {MAX_TIMELINE_HOURLY_DAYS} days",
+                )
+        if granularity == "day":
+            if span_days > MAX_TIMELINE_DAILY_DAYS:
+                raise InvalidTimeRangeException(
+                    key="analytics.errors.timeline_day_range_too_large",
+                    fallback=f"For daily timeline, date range must be <= {MAX_TIMELINE_DAILY_DAYS} days",
+                )
