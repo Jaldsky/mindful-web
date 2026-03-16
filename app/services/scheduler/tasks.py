@@ -2,10 +2,14 @@ import asyncio
 from uuid import UUID
 from celery import shared_task
 
-from ..analytics.types import Date, Page, PageSize, SortBy, SortOrder
+from ..analytics.types import Date, Page, PageSize, SortBy, SortOrder, TimelineGranularity, TopDomainsLimit
 from ...config import DEFAULT_PAGE_SIZE
 from ...db.session.provider import Provider
-from ..analytics import ComputeDomainUsageService, ComputeUsageSummaryService
+from ..analytics import (
+    ComputeDomainUsageService,
+    ComputeUsageSummaryService,
+    ComputeUsageTimelineService,
+)
 
 
 @shared_task(name="analytics.compute_domain_usage")
@@ -71,6 +75,40 @@ def compute_usage_summary_task(
             user_id=user_id,
             start_date=start_date,
             end_date=end_date,
+        )
+        result_schema = asyncio.run(service.exec())
+        return result_schema.model_dump(mode="json")
+
+
+@shared_task(name="analytics.compute_usage_timeline")
+def compute_usage_timeline_task(
+    user_id: UUID,
+    start_date: Date,
+    end_date: Date,
+    granularity: TimelineGranularity = "day",
+    top_domains_limit: TopDomainsLimit = 5,
+) -> dict:
+    """Celery задача вычисления timeline статистики использования.
+
+    Args:
+        user_id: Идентификатор пользователя.
+        start_date: Начало временного диапазона.
+        end_date: Конец временного диапазона.
+        granularity: Гранулярность агрегации.
+        top_domains_limit: Максимум доменов в каждом временном бакете.
+
+    Returns:
+        Словарь с timeline-результатами аналитики.
+    """
+    provider = Provider()
+    with provider.sync_manager.get_session() as session:
+        service = ComputeUsageTimelineService(
+            session=session,
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date,
+            granularity=granularity,
+            top_domains_limit=top_domains_limit,
         )
         result_schema = asyncio.run(service.exec())
         return result_schema.model_dump(mode="json")
